@@ -336,7 +336,7 @@ textarea::placeholder{color:var(--text4)}
 .dash-section-title a{font-size:var(--text-base);color:var(--gold);text-decoration:none;font-weight:600;text-transform:none;letter-spacing:0}
 
 /* PROJECT CARDS */
-.projects-grid{id="pricingGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.projects-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
 .project-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);transition:all .2s;cursor:pointer}
 .project-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--border2)}
 .project-card-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
@@ -739,95 +739,6 @@ textarea::placeholder{color:var(--text4)}
   /* Search bar on analyzer */
   .addr-input{font-size:var(--text-base)}
   [id="addrInputWrap"] + .submit-btn{width:100%;margin-top:8px}
-
-  /* Analyzer input row — stack address + button */
-  .analyzer-input-row{flex-direction:column!important}
-  .analyzer-input-row .submit-btn{width:100%}
-
-  /* Permit progress tracker stages — scroll horizontally */
-  .pt-stages{overflow-x:auto;padding-bottom:8px}
-
-  /* Result tabs — make them scroll horizontally, no wrap */
-  .result-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  .result-tab{white-space:nowrap;flex-shrink:0}
-
-  /* Zoning detail panels — single col stat grid */
-  .zdp-stat-grid{grid-template-columns:1fr 1fr!important}
-
-  /* Setback diagram — stack vertically */
-  .zdp-body > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
-  .setback-lot{min-width:unset!important}
-
-  /* Permit summary bar — 2 cols then wrap */
-  .permit-summary-bar{flex-wrap:wrap;gap:12px}
-  .permit-summary-item{flex:1 1 40%}
-  .permit-summary-divider{display:none}
-
-  /* Deal KPI row */
-  .deal-kpi-row{grid-template-columns:1fr!important}
-
-  /* Tools page timing grid */
-  #timingResults > div{grid-template-columns:1fr 1fr!important}
-
-  /* Fee calc row — stack on mobile */
-  #feeCalcRow{flex-direction:column!important}
-
-  /* BBL/address input 3-col → 2-col */
-  .bbl-grid{grid-template-columns:1fr 1fr!important}
-}
-
-/* Home page inline grid overrides for mobile */
-@media(max-width:700px){
-  /* Features strip: 4-col → 2-col */
-  #featuresStrip{grid-template-columns:1fr 1fr!important}
-
-  /* Free tier CTA: side-by-side → stacked */
-  #freeCtaInner{grid-template-columns:1fr!important}
-  #freeCtaInner > div:last-child{display:none}
-
-  /* Early access 2-col grid → 1-col */
-  #earlyAccessGrid{grid-template-columns:1fr!important}
-
-  /* Pricing grid 3-col → 1-col */
-  #pricingGrid{grid-template-columns:1fr!important}
-
-  /* API section 2-col → 1-col */
-  #apiSection > div{grid-template-columns:1fr!important}
-  #apiSection pre{font-size:11px}
-
-  /* White label 2-col → 1-col */
-  #whiteLabelSection > div{grid-template-columns:1fr!important}
-
-  /* Footer 3-col → 1-col */
-  #siteFooterGrid{grid-template-columns:1fr!important}
-
-  /* Hero card — hide on very small screens to save space */
-  .hero-card{display:none}
-  .hero-inner{gap:24px}
-  h1{font-size:2rem}
-}
-
-@media(max-width:480px){
-  /* Zoning example chips — wrap nicely */
-  .zoning-examples{flex-wrap:wrap;gap:6px}
-  .zoning-example-chip{font-size:var(--text-sm)}
-
-  /* Deal type buttons row */
-  .deal-type-row{flex-wrap:wrap}
-  .deal-type-btn{flex:1;min-width:100px}
-
-  /* Features strip: 4-col → 1-col on tiny screens */
-  #featuresStrip > div{grid-template-columns:1fr!important}
-
-  /* Pricing cards full width */
-  .pricing-card{padding:20px 16px}
-
-  /* Tighten hero */
-  .hero{padding:24px 16px 32px}
-  h1{font-size:1.75rem;line-height:1.2}
-  .hero-sub{font-size:var(--text-base)}
-  .hero-ctas{flex-direction:column}
-  .hero-ctas .btn-gold,.hero-ctas .btn-outline-w{width:100%;text-align:center}
 }
 /* ZONING LOOKUP PAGE */
 .zoning-page{max-width:1100px;margin:0 auto;padding:40px 32px}
@@ -1486,7 +1397,7 @@ window.setDealType = function() {};
     <button onclick="navScrollTo('early-access')" style="margin-left:auto;background:rgba(200,146,42,.15);border:1.5px solid rgba(200,146,42,.6);color:var(--gold-text);font-size:var(--text-sm);font-family:var(--mono);padding:4px 12px;border-radius:var(--radius-pill);cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(200,146,42,.28)'" onmouseout="this.style.background='rgba(200,146,42,.15)'">Request your city →</button>
   </div>
 </div>
-<!-- FEATURES STRIP --> <div style="background:var(--slate);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:48px 32px"> <div id="featuresStrip" style="max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
+<!-- FEATURES STRIP --> <div style="background:var(--slate);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:48px 32px"> <div style="max-width:1160px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
   <div style="background:var(--white);padding:36px 28px">
     <div style="width:44px;height:44px;background:var(--navy-tint);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:18px">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B2B4B" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
@@ -1515,7 +1426,7 @@ window.setDealType = function() {};
     <div style="font-weight:700;font-size:var(--text-md);color:var(--navy);margin-bottom:8px;letter-spacing:-.02em">Permit Checklist</div>
     <div style="font-size:var(--text-base);color:var(--text3);line-height:1.6">Downloadable, project-specific checklist for every filing</div>
   </div>
-</div> </div> <!-- FREE TIER CTA --> <div style="background:var(--white);padding:64px 32px"> <div id="freeCtaInner" style="max-width:900px;margin:0 auto;background:linear-gradient(135deg,var(--navy) 0%,#1e3a6e 100%);border-radius:var(--radius-xl);padding:48px 56px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;position:relative;overflow:hidden"> <div style="position:absolute;top:-40px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(200,146,42,.18) 0%,transparent 65%);pointer-events:none"></div> <div style="position:relative;z-index:1"> <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(200,146,42,.2);border:1px solid rgba(200,146,42,.4);color:var(--gold-text);padding:4px 12px;border-radius:var(--radius-pill);font-size:var(--text-sm);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;font-family:var(--mono)"> Free Tier — No Credit Card</div> <h2 style="font-family:var(--serif);font-size:2rem;color:white;margin-bottom:10px;letter-spacing:-.02em">Get your first report free</h2> <p style="font-size:var(--text-md);color:rgba(255,255,255,.65);line-height:1.6;max-width:480px">Run a full compliance analysis on any New York City property — real zoning data, permits, fees, risk flags, and contractor recommendations — completely free. No signup required for your first report.</p> <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap"> <button class="btn-gold" onclick="switchPage('analyzer')" style="font-size:var(--text-md);padding:12px 28px"> Run Free Analysis</button> <button onclick="navScrollTo('pricing')" style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);padding:11px 22px;border-radius:var(--radius-md);font-size:var(--text-base);font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">View Pricing →</button> </div> </div> <div style="position:relative;z-index:1;flex-shrink:0;text-align:center"> <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);padding:24px 28px;min-width:180px"> <div style="font-size:2.8rem;font-weight:800;color:white;letter-spacing:-.04em;line-height:1">1</div> <div style="font-size:var(--text-base);color:rgba(255,255,255,.5);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Free report</div> <div style="height:1px;background:rgba(255,255,255,.1);margin:14px 0"></div> <div style="font-size:var(--text-base);color:rgba(255,255,255,.6);line-height:1.5">Then from<br><span style="color:var(--gold-text);font-weight:800;font-size:1.1rem">$19</span>/mo</div> </div> </div> </div> </div> <!-- EARLY ACCESS SECTION -->
+</div> </div> <!-- FREE TIER CTA --> <div style="background:var(--white);padding:64px 32px"> <div style="max-width:900px;margin:0 auto;background:linear-gradient(135deg,var(--navy) 0%,#1e3a6e 100%);border-radius:var(--radius-xl);padding:48px 56px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;position:relative;overflow:hidden"> <div style="position:absolute;top:-40px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(200,146,42,.18) 0%,transparent 65%);pointer-events:none"></div> <div style="position:relative;z-index:1"> <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(200,146,42,.2);border:1px solid rgba(200,146,42,.4);color:var(--gold-text);padding:4px 12px;border-radius:var(--radius-pill);font-size:var(--text-sm);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;font-family:var(--mono)"> Free Tier — No Credit Card</div> <h2 style="font-family:var(--serif);font-size:2rem;color:white;margin-bottom:10px;letter-spacing:-.02em">Get your first report free</h2> <p style="font-size:var(--text-md);color:rgba(255,255,255,.65);line-height:1.6;max-width:480px">Run a full compliance analysis on any New York City property — real zoning data, permits, fees, risk flags, and contractor recommendations — completely free. No signup required for your first report.</p> <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap"> <button class="btn-gold" onclick="switchPage('analyzer')" style="font-size:var(--text-md);padding:12px 28px"> Run Free Analysis</button> <button onclick="navScrollTo('pricing')" style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.8);padding:11px 22px;border-radius:var(--radius-md);font-size:var(--text-base);font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">View Pricing →</button> </div> </div> <div style="position:relative;z-index:1;flex-shrink:0;text-align:center"> <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:var(--radius-lg);padding:24px 28px;min-width:180px"> <div style="font-size:2.8rem;font-weight:800;color:white;letter-spacing:-.04em;line-height:1">1</div> <div style="font-size:var(--text-base);color:rgba(255,255,255,.5);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Free report</div> <div style="height:1px;background:rgba(255,255,255,.1);margin:14px 0"></div> <div style="font-size:var(--text-base);color:rgba(255,255,255,.6);line-height:1.5">Then from<br><span style="color:var(--gold-text);font-weight:800;font-size:1.1rem">$19</span>/mo</div> </div> </div> </div> </div> <!-- EARLY ACCESS SECTION -->
 <div style="background:var(--slate);border-top:1px solid var(--border);padding:72px 32px" id="case-studies">
   <div style="max-width:1100px;margin:0 auto">
     <div style="text-align:center;margin-bottom:48px">
@@ -1579,7 +1490,7 @@ window.setDealType = function() {};
 </div>
 
 <!-- PRICING TIERS -->
-<div id="pricing" style="background:var(--slate);border-top:1px solid var(--border);padding:72px 32px">
+<div style="background:var(--slate);border-top:1px solid var(--border);padding:72px 32px" id="pricing">
   <div style="max-width:900px;margin:0 auto">
     <div style="text-align:center;margin-bottom:40px">
       <div style="font-family:var(--sans);font-size:var(--text-sm);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:12px">Simple Pricing</div>
@@ -1655,7 +1566,7 @@ window.setDealType = function() {};
   </div>
 </div>
 
-<!-- API & INTEGRATIONS --> <div id="api" style="background:var(--white);padding:72px 32px;border-top:1px solid var(--border)"> <div id="apiSection" style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start"> <div> <div style="font-family:var(--sans);font-size:var(--text-sm);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:14px">Developer API</div> <h2  style="font-family:var(--serif);font-size:2.2rem;color:var(--navy);margin-bottom:14px;letter-spacing:-.02em">Embed compliance intelligence<br>in any platform</h2> <p style="font-size:var(--text-md);color:var(--text2);line-height:1.65;margin-bottom:24px">Our REST API gives title companies, lenders, PropTech platforms, and enterprise tools programmatic access to Terrascope's full analysis engine. Integrate in minutes with our JavaScript and Python SDKs.</p> <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px"> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">REST API</div><div style="font-size:var(--text-base);color:var(--text3)">JSON responses · OAuth 2.0 · Rate limited by plan</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--green);background:var(--green-pale);border:1px solid var(--green-border);padding:3px 9px;border-radius:var(--radius-pill)">Stable</div> </div> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">Webhooks</div><div style="font-size:var(--text-base);color:var(--text3)">Real-time alerts for code changes & permit updates</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--amber);background:var(--amber-pale);border:1px solid var(--amber-border);padding:3px 9px;border-radius:var(--radius-pill)">Coming Soon</div> </div> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">Zapier / Make</div><div style="font-size:var(--text-base);color:var(--text3)">Connect to 5,000+ apps — automate your permit workflows</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--amber);background:var(--amber-pale);border:1px solid var(--amber-border);padding:3px 9px;border-radius:var(--radius-pill)">Planned</div> </div> </div> <div style="display:flex;gap:10px;flex-wrap:wrap"> <button onclick="openApiModal()" class="btn-navy">View API docs →</button> <button onclick="openModal('signup')" style="background:transparent;border:1.5px solid var(--border2);color:var(--navy);padding:10px 20px;border-radius:var(--radius-md);font-size:var(--text-base);font-weight:600;cursor:pointer;font-family:var(--sans)">Get API key free</button> </div> </div> <!-- Code sample --> <div> <div style="background:#0f1923;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg)"> <div style="padding:12px 16px;background:#1a2535;display:flex;align-items:center;justify-content:space-between"> <div style="display:flex;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></div><div style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></div><div style="width:10px;height:10px;border-radius:50%;background:#28C840"></div></div> <div style="font-family:var(--mono);font-size:var(--text-sm);color:rgba(255,255,255,.3)">terrascope_example.js</div> <button onclick="copyApiSample(this)" style="font-family:var(--mono);font-size:var(--text-sm);color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer">Copy</button> </div> <pre style="padding:20px;font-family:var(--mono);font-size:var(--text-base);line-height:1.6;color:#e2e8f0;overflow-x:auto;margin:0"><span style="color:#7dd3fc">const</span> <span style="color:#bae6fd">terrascope</span> = <span style="color:#7dd3fc">require</span>(<span style="color:#86efac">'@terrascope/sdk'</span>);
+<!-- API & INTEGRATIONS --> <div style="background:var(--white);padding:72px 32px;border-top:1px solid var(--border)" id="api"> <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start"> <div> <div style="font-family:var(--sans);font-size:var(--text-sm);font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--gold);margin-bottom:14px">Developer API</div> <h2  style="font-family:var(--serif);font-size:2.2rem;color:var(--navy);margin-bottom:14px;letter-spacing:-.02em">Embed compliance intelligence<br>in any platform</h2> <p style="font-size:var(--text-md);color:var(--text2);line-height:1.65;margin-bottom:24px">Our REST API gives title companies, lenders, PropTech platforms, and enterprise tools programmatic access to Terrascope's full analysis engine. Integrate in minutes with our JavaScript and Python SDKs.</p> <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px"> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">REST API</div><div style="font-size:var(--text-base);color:var(--text3)">JSON responses · OAuth 2.0 · Rate limited by plan</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--green);background:var(--green-pale);border:1px solid var(--green-border);padding:3px 9px;border-radius:var(--radius-pill)">Stable</div> </div> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">Webhooks</div><div style="font-size:var(--text-base);color:var(--text3)">Real-time alerts for code changes & permit updates</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--amber);background:var(--amber-pale);border:1px solid var(--amber-border);padding:3px 9px;border-radius:var(--radius-pill)">Coming Soon</div> </div> <div style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:14px"> <div style="font-size:1.4rem"></div> <div><div style="font-weight:700;font-size:var(--text-base);color:var(--navy)">Zapier / Make</div><div style="font-size:var(--text-base);color:var(--text3)">Connect to 5,000+ apps — automate your permit workflows</div></div> <div style="margin-left:auto;font-family:var(--mono);font-size:var(--text-sm);font-weight:700;color:var(--amber);background:var(--amber-pale);border:1px solid var(--amber-border);padding:3px 9px;border-radius:var(--radius-pill)">Planned</div> </div> </div> <div style="display:flex;gap:10px;flex-wrap:wrap"> <button onclick="openApiModal()" class="btn-navy">View API docs →</button> <button onclick="openModal('signup')" style="background:transparent;border:1.5px solid var(--border2);color:var(--navy);padding:10px 20px;border-radius:var(--radius-md);font-size:var(--text-base);font-weight:600;cursor:pointer;font-family:var(--sans)">Get API key free</button> </div> </div> <!-- Code sample --> <div> <div style="background:#0f1923;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-lg)"> <div style="padding:12px 16px;background:#1a2535;display:flex;align-items:center;justify-content:space-between"> <div style="display:flex;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></div><div style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></div><div style="width:10px;height:10px;border-radius:50%;background:#28C840"></div></div> <div style="font-family:var(--mono);font-size:var(--text-sm);color:rgba(255,255,255,.3)">terrascope_example.js</div> <button onclick="copyApiSample(this)" style="font-family:var(--mono);font-size:var(--text-sm);color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer">Copy</button> </div> <pre style="padding:20px;font-family:var(--mono);font-size:var(--text-base);line-height:1.6;color:#e2e8f0;overflow-x:auto;margin:0"><span style="color:#7dd3fc">const</span> <span style="color:#bae6fd">terrascope</span> = <span style="color:#7dd3fc">require</span>(<span style="color:#86efac">'@terrascope/sdk'</span>);
 
 <span style="color:#7dd3fc">const</span> <span style="color:#bae6fd">report</span> = <span style="color:#7dd3fc">await</span> terrascope.<span style="color:#7dd3fc">analyze</span>({
  <span style="color:#86efac">address</span>: <span style="color:#86efac">'550 Madison Ave, NY'</span>,
@@ -1765,7 +1676,7 @@ console.<span style="color:#7dd3fc">log</span>(report.<span style="color:#bae6fd
   </div>
 
   <div style="margin-top:12px;text-align:center;font-size:var(--text-base);color:rgba(255,255,255,.3);font-family:var(--sans)">Your clients see your brand. We handle the rest.</div>
-</div> </div> </div> <!-- SITE FOOTER --> <footer style="background:#0c1520;padding:56px 32px 32px;border-top:1px solid rgba(255,255,255,.06)"> <div style="max-width:1100px;margin:0 auto"> <div id="siteFooterGrid" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:48px"> <!-- Brand --> <div> <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px"> <div style="width:32px;height:32px;background:var(--gold);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:14px"></div> <span style="font-weight:800;font-size:1.1rem;color:white;letter-spacing:-.02em">Terra<span style="color:var(--gold)">scope</span></span> </div> <p style="font-size:var(--text-base);color:rgba(255,255,255,.4);line-height:1.6;max-width:260px;margin-bottom:18px">Live permit and zoning intelligence for New York City developers, contractors, title companies, and lenders. More cities launching soon.</p> <div style="display:flex;gap:8px">
+</div> </div> </div> <!-- SITE FOOTER --> <footer style="background:#0c1520;padding:56px 32px 32px;border-top:1px solid rgba(255,255,255,.06)"> <div style="max-width:1100px;margin:0 auto"> <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:48px"> <!-- Brand --> <div> <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px"> <div style="width:32px;height:32px;background:var(--gold);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:14px"></div> <span style="font-weight:800;font-size:1.1rem;color:white;letter-spacing:-.02em">Terra<span style="color:var(--gold)">scope</span></span> </div> <p style="font-size:var(--text-base);color:rgba(255,255,255,.4);line-height:1.6;max-width:260px;margin-bottom:18px">Live permit and zoning intelligence for New York City developers, contractors, title companies, and lenders. More cities launching soon.</p> <div style="display:flex;gap:8px">
   <!-- X / Twitter -->
   <a href="#" target="_blank" rel="noopener" id="socialX" title="Follow on X" style="width:32px;height:32px;background:rgba(255,255,255,.07);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;text-decoration:none;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.14)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="white" opacity="0.7"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -3576,8 +3487,8 @@ function applyNYCDobToUI(dobData) {
   // Log first permit to see actual field names
   if (shown.length > 0) console.log('[Terrascope DOB] Sample permit fields:', Object.keys(shown[0]), shown[0]);
   const permitRows = shown.map(p => {
-    const jobType = (p.job_type || p.jobtype || p.permit_type || p.permittype || p.job_status || '??').toUpperCase().trim().split(' ')[0];
-    const workType = (p.work_type || p.worktype || p.permit_sub_type || p.job_doc_number || '').toUpperCase().trim().split(' ')[0];
+    const jobType = (p.jobType || p.type || p.job_type || p.permit_type || '').toUpperCase().trim().split(' ')[0] || 'N/A';
+    const workType = (p.work_type || p.worktype || p.permit_sub_type || '').toUpperCase().trim().split(' ')[0];
     const rawCode = jobType + (workType && workType !== jobType ? ' · ' + workType : '');
 
     // Look up readable labels
