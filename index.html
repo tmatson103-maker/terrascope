@@ -741,61 +741,28 @@ textarea::placeholder{color:var(--text4)}
   [id="addrInputWrap"] + .submit-btn{width:100%;margin-top:8px}
 }
 /* ── MOBILE IMPROVEMENTS ──────────────────────────────── */
-
-/* Tablet (900px and below) — already handled above, add extras */
-@media(max-width:900px){
-  .hero-inner{gap:32px}
-}
-
-/* Mobile (600px and below) extras */
 @media(max-width:600px){
-  /* Result tabs — horizontal scroll, no wrapping */
   .result-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .result-tabs::-webkit-scrollbar{display:none}
   .result-tab{white-space:nowrap;flex-shrink:0;font-size:11px;padding:8px 10px}
-
-  /* Permit summary bar wraps */
   .permit-summary-bar{flex-wrap:wrap;gap:0}
   .permit-summary-item{flex:1 1 45%;padding:12px 14px}
   .permit-summary-divider{display:none}
-
-  /* Setback section: stack diagram + table */
-  .setback-table{width:100%}
-
-  /* Zoning stat grid: 2x2 on mobile */
   .zdp-stat-grid{grid-template-columns:1fr 1fr!important}
-
-  /* Progress tracker stages scroll */
   .pt-stages{overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
   .pt-stages::-webkit-scrollbar{display:none}
-
-  /* Deal type row wraps */
   .deal-type-row{flex-wrap:wrap}
   .deal-type-btn{flex:1;min-width:120px}
-
-  /* Hero CTAs stack on small screens */
   .hero-ctas{flex-direction:column}
   .hero-ctas .btn-gold,.hero-ctas .btn-outline-w{width:100%;text-align:center;justify-content:center}
   h1{font-size:2.1rem}
   .hero-sub{font-size:var(--text-base)}
-
-  /* Zoning example chips wrap */
   .zoning-examples{flex-wrap:wrap;gap:6px}
-
-  /* Tools page timing/violation grids */
-  .tools-page .tc{padding:16px}
 }
-
-/* Small phones (430px and below) */
 @media(max-width:430px){
   h1{font-size:1.8rem;line-height:1.2}
   .hero{padding:24px 16px 32px}
   .hero-card{display:none}
-
-  /* Pricing cards full width */
-  .pricing-card{padding:20px 16px}
-
-  /* Analyzer page padding */
   .analyzer-page{padding:12px}
 }
 
@@ -4414,12 +4381,12 @@ window.showToast = showToast;
 
 // PROGRESS TRACKER 
 const PERMIT_STAGES = [
- {label:'Pre-App\nReview', desc:'Pre-application meeting'},
- {label:'Submit\nDocs', desc:'Submit permit application'},
- {label:'Plan\nReview', desc:'Departmental plan review'},
- {label:'Revisions', desc:'Address any corrections'},
- {label:'Approved', desc:'Permit issued'},
- {label:'Inspect', desc:'Final inspections'},
+  {label:'Pre-App\nReview', desc:'Schedule a pre-application meeting with the NYC DOB to confirm scope, zoning compliance, and required filings before submitting.', link:'https://www.nyc.gov/site/buildings/industry/pre-filing-meetings.page', linkLabel:'Schedule at NYC DOB ↗'},
+  {label:'Submit\nDocs', desc:'File your plans and permit application through DOB NOW: Build. You\'ll need a licensed PE or RA to certify the drawings.', link:'https://a810-dobnow.nyc.gov/publish/', linkLabel:'Open DOB NOW: Build ↗'},
+  {label:'Plan\nReview', desc:'DOB examiners review your submitted plans for code compliance. Typical review time is 4–12 weeks depending on job type and borough.', link:'https://www.nyc.gov/site/buildings/industry/plan-examination.page', linkLabel:'Plan Examination Info ↗'},
+  {label:'Revisions', desc:'Address any objections or correction notices from the examiner. Respond to each objection through DOB NOW and resubmit revised plans.', link:'https://a810-dobnow.nyc.gov/publish/', linkLabel:'Respond in DOB NOW ↗'},
+  {label:'Approved', desc:'Permit has been issued — post it at the job site before work begins. Keep a copy on-site at all times during construction.', link:'https://a810-dobnow.nyc.gov/publish/', linkLabel:'View Permit in DOB NOW ↗'},
+  {label:'Inspect', desc:'Schedule required inspections through the Special Inspection Program. Final inspection must pass before a Certificate of Occupancy is issued.', link:'https://www.nyc.gov/site/buildings/industry/inspections.page', linkLabel:'Inspection Scheduling ↗'},
 ];
 
 // Current stage for active report (0-indexed)
@@ -4451,11 +4418,15 @@ function renderProgressTracker(stage) {
     const cls = i < stage ? 'done' : i === stage ? 'current' : '';
     const dotContent = i < stage ? '✓' : (i + 1);
     const isNext = i === stage + 1;
-    return `<div class="pt-stage ${cls}" onclick="advanceTrackerTo(${i})" title="${i <= stage ? s.desc : 'Click to mark as current stage'}">
+    const ts = window._trackerTimestamps && window._trackerTimestamps[i];
+    const dateLabel = i < stage && ts ? `<div class="pt-stage-date">${ts}</div>`
+      : i === stage ? `<div class="pt-stage-date" style="color:var(--navy);font-weight:700">Current${ts ? ' · ' + ts : ''}</div>`
+      : isNext ? `<div class="pt-stage-date" style="color:var(--text4)">Next →</div>`
+      : '';
+    return `<div class="pt-stage ${cls}" onclick="handleStageClick(event,${i})" title="Click for details">
       <div class="pt-stage-dot">${dotContent}</div>
       <div class="pt-stage-label">${s.label.replace(/\n/g,'<br>')}</div>
-      ${i === stage ? `<div class="pt-stage-date" style="color:var(--navy);font-weight:700">Current</div>` : ''}
-      ${isNext ? `<div class="pt-stage-date" style="color:var(--text4)">Next →</div>` : ''}
+      ${dateLabel}
     </div>`;
   }).join('');
 
@@ -4486,9 +4457,16 @@ function renderProgressTracker(stage) {
   }
 }
 
+// Store timestamps for completed stages: { stageIndex: 'Mar 15, 2026' }
+window._trackerTimestamps = window._trackerTimestamps || {};
+
 function advanceTrackerTo(stageIndex) {
   const total = PERMIT_STAGES.length;
   if (stageIndex < 0 || stageIndex >= total) return;
+  // Record timestamp when marking a stage as current
+  if (!window._trackerTimestamps[stageIndex]) {
+    window._trackerTimestamps[stageIndex] = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  }
   _trackerStage = stageIndex;
   window._currentProjectStage = stageIndex;
   renderProgressTracker(stageIndex);
@@ -4511,6 +4489,59 @@ function advanceTrackerTo(stageIndex) {
 function stepTrackerBack() {
   if (_trackerStage <= 0) return;
   advanceTrackerTo(_trackerStage - 1);
+}
+
+function handleStageClick(e, stageIndex) {
+  e.stopPropagation();
+  // Show detail popover AND advance stage
+  showStageDetail(e, stageIndex);
+  advanceTrackerTo(stageIndex);
+}
+
+function showStageDetail(e, stageIndex) {
+  // Remove any existing popover
+  const existing = document.getElementById('stageDetailPopover');
+  if (existing) existing.remove();
+
+  const s = PERMIT_STAGES[stageIndex];
+  const isDone = stageIndex < _trackerStage;
+  const isCurrent = stageIndex === _trackerStage;
+  const ts = window._trackerTimestamps && window._trackerTimestamps[stageIndex];
+
+  const popover = document.createElement('div');
+  popover.id = 'stageDetailPopover';
+  popover.style.cssText = 'position:fixed;z-index:2000;background:white;border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 32px rgba(27,43,75,.18);width:min(320px,90vw);padding:18px;animation:fadeUp .15s ease';
+
+  const statusColor = isDone ? 'var(--green)' : isCurrent ? 'var(--navy)' : 'var(--text3)';
+  const statusLabel = isDone ? '✓ Completed' : isCurrent ? '● Current Stage' : 'Upcoming';
+
+  popover.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:var(--text-sm);font-weight:700;color:${statusColor};text-transform:uppercase;letter-spacing:.06em;font-family:var(--sans)">${statusLabel}${ts ? ' · ' + ts : ''}</span>
+      <button onclick="document.getElementById('stageDetailPopover').remove()" style="background:var(--slate);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:11px;color:var(--text3);display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="font-weight:700;font-size:var(--text-md);color:var(--navy);margin-bottom:8px">${s.label.replace(/\n/g,' ')}</div>
+    <p style="font-size:var(--text-base);color:var(--text2);line-height:1.6;margin-bottom:12px">${s.desc}</p>
+    <a href="${s.link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:white;text-decoration:none;border-radius:var(--radius-md);padding:8px 14px;font-size:var(--text-base);font-weight:600;font-family:var(--sans);transition:background .15s" onmouseover="this.style.background='var(--navy-light)'" onmouseout="this.style.background='var(--navy)'">${s.linkLabel}</a>
+  `;
+
+  document.body.appendChild(popover);
+
+  // Position near the clicked stage dot
+  const target = e.currentTarget || e.target;
+  const rect = target.getBoundingClientRect ? target.getBoundingClientRect() : {top:200, left:200, width:0};
+  let top = rect.top - popover.offsetHeight - 12;
+  let left = rect.left + rect.width / 2 - 160;
+  if (top < 10) top = rect.bottom + 12;
+  if (left < 8) left = 8;
+  if (left + 320 > window.innerWidth - 8) left = window.innerWidth - 328;
+  popover.style.top = top + 'px';
+  popover.style.left = left + 'px';
+
+  // Dismiss on outside click
+  setTimeout(() => document.addEventListener('click', function dismiss(ev) {
+    if (!popover.contains(ev.target)) { popover.remove(); document.removeEventListener('click', dismiss); }
+  }), 50);
 }
 
 async function saveTrackerStage(stage) {
