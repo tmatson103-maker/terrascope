@@ -5335,7 +5335,7 @@ console.<span style="color:#7dd3fc">log</span>(report.<span style="color:#bae6fd
 // ── LEAFLET MAP ────────────────────────────────────────────────
 _leafletMap = null;
 _leafletMarker = null;
-let _leafletCircle = null;
+_leafletCircle = null;
 
 function initMap(address) {
   const lat = window._selectedLat || 40.7614;
@@ -5471,14 +5471,14 @@ window.addEventListener('unhandledrejection', function(e) {
 // STATE 
 selectedType = 'Commercial New Build';
 currentAddress = '';
-let savedProjects = [];
-let mapInstance = null;
+savedProjects = [];
+mapInstance = null;
 let checklistItems = [];
 
 // PAGE ROUTING (see window.switchPage override below) 
 
 // ADDRESS AUTOCOMPLETE 
-const SAMPLE_ADDRESSES = [
+SAMPLE_ADDRESSES = [
  // Washington DC
  {main:'1600 Pennsylvania Ave NW', sub:'Washington, DC 20500', lat:38.8977, lng:-77.0366},
  {main:'1 First St NE', sub:'Washington, DC 20543', lat:38.8909, lng:-77.0042},
@@ -5553,7 +5553,7 @@ const SAMPLE_ADDRESSES = [
 ];
 
 
-let autocompleteTimeout;
+autocompleteTimeout;
 function handleAddressInput(val) {
  clearTimeout(autocompleteTimeout);
  document.getElementById('addrVerified').style.display = 'none';
