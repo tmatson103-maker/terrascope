@@ -3482,18 +3482,6 @@ function applyNYCDobToUI(dobData) {
     'EQ': { label: 'Equipment', desc: 'Equipment installation (elevator, HVAC, etc.)', color: '#0d9488' },
     'PL': { label: 'Plumbing', desc: 'Plumbing work', color: '#2563eb' },
     'EW': { label: 'Electrical', desc: 'Electrical work', color: '#ca8a04' },
-    // DOB work_type subcodes
-    'OT': { label: 'Other Work', desc: 'General or miscellaneous work', color: '#6b7280' },
-    'MH': { label: 'Mechanical', desc: 'HVAC, ventilation, or mechanical systems', color: '#0d9488' },
-    'SD': { label: 'Standpipe', desc: 'Standpipe system work', color: '#dc2626' },
-    'SP': { label: 'Sprinkler', desc: 'Sprinkler system installation or modification', color: '#dc2626' },
-    'FA': { label: 'Fire Alarm', desc: 'Fire alarm system work', color: '#dc2626' },
-    'FB': { label: 'Fuel Burning', desc: 'Fuel burning equipment', color: '#92400e' },
-    'FS': { label: 'Fuel Storage', desc: 'Fuel storage tank work', color: '#92400e' },
-    'MN': { label: 'Mechanical', desc: 'Mechanical system work', color: '#0d9488' },
-    'CC': { label: 'Curb Cut', desc: 'Curb cut permit', color: '#7c3aed' },
-    'BK': { label: 'Boiler', desc: 'Boiler work', color: '#6b7280' },
-    'EL': { label: 'Electrical', desc: 'Electrical work', color: '#ca8a04' },
     // Work types
     'AL': { label: 'Alteration', desc: 'General alteration work', color: '#7c3aed' },
     'GC': { label: 'General Construction', desc: 'General construction permit', color: '#1d4ed8' },
@@ -3522,37 +3510,46 @@ function applyNYCDobToUI(dobData) {
   const shown = allPermits.slice(0, 6);
   const remaining = allPermits.length - shown.length;
 
-  // Log first permit to see actual field names
-  if (shown.length > 0) console.log('[Terrascope DOB] Sample permit fields:', Object.keys(shown[0]), shown[0]);
   const permitRows = shown.map(p => {
-    const jobType = (p.jobType || p.type || p.job_type || p.permit_type || '').toUpperCase().trim().split(' ')[0] || 'N/A';
-    const workType = (p.work_type || p.worktype || p.permit_sub_type || '').toUpperCase().trim().split(' ')[0];
-    const rawCode = jobType + (workType && workType !== jobType ? ' · ' + workType : '');
+    const jobType = (p.jobType || p.type || '').toUpperCase().trim().split(' ')[0] || 'N/A';
+    // p.desc is the work_type code (e.g. "OT", "MH", "PL") when job_description is empty
+    const descRaw = (p.desc || '').trim();
+    const descCode = descRaw.toUpperCase();
+    const workTypeLookup = PERMIT_CODES[descCode];
 
-    // Look up readable labels
     const jobInfo = PERMIT_CODES[jobType] || { label: jobType, desc: 'Permit filed with NYC DOB', color: '#6b7280' };
-    const workInfo = workType && workType !== jobType ? (PERMIT_CODES[workType] || null) : null;
 
-    const year = new Date(p.issuance_date || p.filing_date || p.issued_date || p.approvaldate || p.permit_expiration_date || '').getFullYear() || '';
-    const status = p.permit_status || p.job_status_descrp || '';
+    // Full description: if desc is a known code, show its label, else show raw desc
+    const fullDesc = workTypeLookup
+      ? workTypeLookup.label + (workTypeLookup.desc ? ' — ' + workTypeLookup.desc : '')
+      : (descRaw.length > 3 ? descRaw : jobInfo.desc);
+
+    const rawDate = p.date || '';
+    const dateObj = rawDate ? new Date(rawDate) : null;
+    const dateStr = dateObj && !isNaN(dateObj)
+      ? dateObj.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+      : '';
+
+    const status = p.status || '';
     const isActive = status && (status.toLowerCase().includes('active') || status.toLowerCase().includes('issued'));
     const dotColor = isActive ? '#10b981' : '#94a3b8';
+    const jobNum = p.jobNum ? ' · Job #' + p.jobNum : '';
 
-    // Use normalized p.desc first, then fall back to work type label
-    const rawDesc = p.desc || p.job_description || p.description || '';
-    const workTypeLabel = workType && PERMIT_CODES[workType] ? PERMIT_CODES[workType].label : '';
-    const desc = (rawDesc && rawDesc.length > 2) ? rawDesc : (workTypeLabel || jobInfo.desc);
-    const jobNum = p.jobNum ? 'Job #' + p.jobNum : '';
+    // Work type badge (the code itself, e.g. "OT", "MH")
+    const workBadge = workTypeLookup
+      ? '<span style="font-size:var(--text-sm);font-weight:700;color:' + (workTypeLookup.color||'#6b7280') + ';background:' + (workTypeLookup.color||'#6b7280') + '18;border-radius:var(--radius-pill);padding:1px 8px">' + workTypeLookup.label + '</span>'
+      : '';
 
-    return '<div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">'
-      + '<div style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;margin-top:5px"></div>'
+    return '<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">'
+      + '<div style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;margin-top:6px"></div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'
-      + '<span style="font-weight:700;color:var(--navy);font-size:var(--text-base)">' + rawCode + '</span>'
-      + '<span style="font-size:var(--text-sm);font-weight:700;color:' + jobInfo.color + ';background:' + jobInfo.color + '18;border-radius:var(--radius-pill);padding:1px 8px">' + jobInfo.label + (workInfo ? ' — ' + workInfo.label : '') + '</span>'
-      + (year ? '<span style="font-size:var(--text-sm);color:var(--text3);margin-left:auto">' + year + '</span>' : '')
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+      + '<span style="font-weight:700;color:var(--navy);font-size:var(--text-base)">' + jobType + '</span>'
+      + '<span style="font-size:var(--text-sm);font-weight:700;color:' + jobInfo.color + ';background:' + jobInfo.color + '18;border-radius:var(--radius-pill);padding:1px 8px">' + jobInfo.label + '</span>'
+      + workBadge
+      + (dateStr ? '<span style="font-size:var(--text-sm);color:var(--text3);margin-left:auto;white-space:nowrap">' + dateStr + '</span>' : '')
       + '</div>'
-      + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.5">' + desc.slice(0, 100) + (desc.length > 100 ? '…' : '') + (jobNum ? ' <span style="color:var(--text4)"> · ' + jobNum + '</span>' : '') + '</div>'
+      + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.5">' + fullDesc + '<span style="color:var(--text4)">' + jobNum + '</span></div>'
       + '</div></div>';
   }).join('');
 
