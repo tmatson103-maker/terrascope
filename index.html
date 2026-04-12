@@ -3491,10 +3491,10 @@ function applyNYCDobToUI(dobData) {
   const allPermits = [...(dobData.activePermits || []), ...(dobData.historicalPermits || [])];
   if (!allPermits.length) return;
 
-  // Sort by date — most recent first
+  // Sort by date — most recent first (use normalized p.date field)
   allPermits.sort((a, b) => {
-    const da = new Date(a.issuance_date || a.filing_date || a.issued_date || '1900');
-    const db = new Date(b.issuance_date || b.filing_date || b.issued_date || '1900');
+    const da = new Date(a.date || a.issuance_date || a.filing_date || a.issued_date || '1900');
+    const db = new Date(b.date || b.issuance_date || b.filing_date || b.issued_date || '1900');
     return db - da;
   });
 
@@ -3510,6 +3510,8 @@ function applyNYCDobToUI(dobData) {
   const shown = allPermits.slice(0, 6);
   const remaining = allPermits.length - shown.length;
 
+  // Log first permit to see actual field names
+  if (shown.length > 0) console.log('[Terrascope DOB] Sample permit fields:', Object.keys(shown[0]), shown[0]);
   const permitRows = shown.map(p => {
     const jobType = (p.jobType || p.type || '').toUpperCase().trim().split(' ')[0] || 'N/A';
     // p.desc is the work_type code (e.g. "OT", "MH", "PL") when job_description is empty
@@ -3519,7 +3521,7 @@ function applyNYCDobToUI(dobData) {
 
     const jobInfo = PERMIT_CODES[jobType] || { label: jobType, desc: 'Permit filed with NYC DOB', color: '#6b7280' };
 
-    // Full description: if desc is a known code, show its label, else show raw desc
+    // Full description: if desc is a known code show its label, else show raw desc
     const fullDesc = workTypeLookup
       ? workTypeLookup.label + (workTypeLookup.desc ? ' — ' + workTypeLookup.desc : '')
       : (descRaw.length > 3 ? descRaw : jobInfo.desc);
@@ -3535,7 +3537,6 @@ function applyNYCDobToUI(dobData) {
     const dotColor = isActive ? '#10b981' : '#94a3b8';
     const jobNum = p.jobNum ? ' · Job #' + p.jobNum : '';
 
-    // Work type badge (the code itself, e.g. "OT", "MH")
     const workBadge = workTypeLookup
       ? '<span style="font-size:var(--text-sm);font-weight:700;color:' + (workTypeLookup.color||'#6b7280') + ';background:' + (workTypeLookup.color||'#6b7280') + '18;border-radius:var(--radius-pill);padding:1px 8px">' + workTypeLookup.label + '</span>'
       : '';
