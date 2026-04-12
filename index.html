@@ -3432,12 +3432,14 @@ async function fetchNYCDobData(address) {
     if (nowRes.status === 'fulfilled' && nowRes.value.ok) {
       const data = await nowRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
+        console.log('[Terrascope DOB RAW active]', data[0]);
         activePermits = data.map(p => ({
           type: p.work_permit_type || p.filing_status || 'Permit',
-          status: p.filing_status || 'Active',
-          desc: p.job_description || p.work_type || '',
+          status: p.filing_status || p.job_status_descrp || 'Active',
+          desc: p.job_description || p.item__ || p.permittypedescription || p.work_type || p.jobdescription || '',
           date: p.issued_date || p.filing_date || '',
-          jobType: p.job_type || ''
+          jobType: p.job_type || '',
+          jobNum: p.job__ || p.job_filing_number || ''
         }));
       }
     }
@@ -3445,13 +3447,15 @@ async function fetchNYCDobData(address) {
     if (histRes.status === 'fulfilled' && histRes.value.ok) {
       const data = await histRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
+        console.log('[Terrascope DOB RAW historical]', data[0]);
         historicalPermits = data.map(p => ({
           type: p.permit_type || p.work_type || 'Permit',
-          status: p.permit_status || 'Issued',
-          desc: p.job_description || p.work_type || '',
-          date: p.issuance_date || '',
+          status: p.permit_status || p.job_status_descrp || 'Issued',
+          desc: p.job_description || p.item__ || p.permittypedescription || p.work_type || p.jobdescription || '',
+          date: p.issuance_date || p.filing_date || '',
           jobType: p.job_type || '',
-          expirationDate: p.expiration_date || ''
+          expirationDate: p.expiration_date || '',
+          jobNum: p.job__ || p.job_filing_number || ''
         }));
       }
     }
@@ -3526,7 +3530,9 @@ function applyNYCDobToUI(dobData) {
     const isActive = status && (status.toLowerCase().includes('active') || status.toLowerCase().includes('issued'));
     const dotColor = isActive ? '#10b981' : '#94a3b8';
 
-    const desc = p.job_description || p.description || '';
+    // p.desc is the normalized field from the fetch block above
+    const desc = p.desc || p.job_description || p.description || '';
+    const jobNum = p.jobNum ? 'Job #' + p.jobNum : '';
 
     return '<div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">'
       + '<div style="width:8px;height:8px;border-radius:50%;background:' + dotColor + ';flex-shrink:0;margin-top:5px"></div>'
@@ -3536,7 +3542,7 @@ function applyNYCDobToUI(dobData) {
       + '<span style="font-size:var(--text-sm);font-weight:700;color:' + jobInfo.color + ';background:' + jobInfo.color + '18;border-radius:var(--radius-pill);padding:1px 8px">' + jobInfo.label + (workInfo ? ' — ' + workInfo.label : '') + '</span>'
       + (year ? '<span style="font-size:var(--text-sm);color:var(--text3);margin-left:auto">' + year + '</span>' : '')
       + '</div>'
-      + '<div style="font-size:var(--text-sm);color:var(--text3)">' + jobInfo.desc + (desc ? ' · ' + desc.slice(0, 60) + (desc.length > 60 ? '…' : '') : '') + '</div>'
+      + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.5">' + (desc ? desc.charAt(0).toUpperCase() + desc.slice(1).toLowerCase().slice(0, 100) + (desc.length > 100 ? '…' : '') : jobInfo.desc) + (jobNum ? ' <span style="color:var(--text4)">· ' + jobNum + '</span>' : '') + '</div>'
       + '</div></div>';
   }).join('');
 
