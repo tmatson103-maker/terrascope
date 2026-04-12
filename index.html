@@ -2312,7 +2312,7 @@ window.addEventListener('error', function(e) {
 });
 window.addEventListener('unhandledrejection', function(e) {
   console.error('TERRASCOPE PROMISE ERROR:', e.reason);
-  let errBanner = document.getElementById('_errBanner');
+  errBanner = document.getElementById('_errBanner');
   if (!errBanner) {
     errBanner = document.createElement('div');
     errBanner.id = '_errBanner';
@@ -2469,7 +2469,7 @@ async function runAnalysis() {
  window._nycDobData = null;
  window._aiSummary = '';
 
- const btn = document.getElementById('analyzeBtn');
+ btn = document.getElementById('analyzeBtn');
  btn.disabled = true;
  document.getElementById('btnText').innerHTML = '<div class="spinner"></div> Analyzing…';
  document.getElementById('reportStatus').textContent = 'Processing…';
@@ -2489,8 +2489,8 @@ async function runAnalysis() {
    try {
      const geo = await fetchLiveGeoData(address);
      if (geo) {
-       const lat = parseFloat(geo.lat);
-       const lng = parseFloat(geo.lon);
+       lat = parseFloat(geo.lat);
+       lng = parseFloat(geo.lon);
        const detectedCity = detectCity(lat, lng);
        const step2Detail = document.getElementById('step2Detail');
        if (detectedCity && step2Detail) {
@@ -2539,13 +2539,13 @@ async function runAnalysis() {
 
  } catch(err) {
    console.error('runAnalysis error:', err);
-   const btn = document.getElementById('analyzeBtn');
+   btn = document.getElementById('analyzeBtn');
    if (btn) btn.disabled = false;
-   const btnText = document.getElementById('btnText');
+   btnText = document.getElementById('btnText');
    if (btnText) btnText.innerHTML = 'Analyze Property';
-   const loadingState = document.getElementById('loadingState');
+   loadingState = document.getElementById('loadingState');
    if (loadingState) loadingState.style.display = 'none';
-   const emptyState = document.getElementById('emptyState');
+   emptyState = document.getElementById('emptyState');
    if (emptyState) {
      emptyState.style.display = '';
      emptyState.innerHTML = `
@@ -2569,7 +2569,7 @@ async function runAnalysis() {
 // AI STREAMING TEXT 
 async function streamAIText(address, projectType) {
  const notes = document.getElementById('descInput')?.value?.trim() || '';
- const el = document.getElementById('aiStreamText');
+ el = document.getElementById('aiStreamText');
  if (!el) return;
  el.innerHTML = '<span class="cursor"></span>';
 
@@ -2596,7 +2596,7 @@ async function streamAIText(address, projectType) {
    if (!text) throw new Error('No text in response');
 
    // Typewriter effect
-   let i = 0;
+   i = 0;
    await new Promise(resolve => {
      const tick = () => {
        i += 4;
@@ -2616,10 +2616,10 @@ async function streamAIText(address, projectType) {
      'Residential Addition': `Adding onto a residential property at ${address} typically involves a building permit and potentially an electrical permit depending on scope. Most residential additions clear within 30–60 days in NYC.`,
      'default': `This ${projectType} project at ${address} will require coordination with the NYC DOB. Start by confirming zoning compliance, then file all required permits through DOB NOW: Build.`
    };
-   const text = fallbacks[projectType] || fallbacks['default'];
-   let i = 0;
+   text = fallbacks[projectType] || fallbacks['default'];
+   i = 0;
    await new Promise(resolve => {
-     const tick = () => {
+     tick = () => {
        i += 3;
        el.innerHTML = text.slice(0, i) + (i < text.length ? '<span class="cursor"></span>' : '');
        if (i < text.length) requestAnimationFrame(tick);
@@ -2638,11 +2638,11 @@ async function streamAIText(address, projectType) {
 async function enrichAnalysisWithRealZoning(address, projectType) {
  const zd = window._realZoningData;
  if (!zd) return null;
- const notes = document.getElementById('descInput')?.value?.trim() || '';
- const prompt = `You are a permit and zoning expert. A property at "${address}" is zoned ${zd.zoningCode} (${zd.cityName}). The project type is "${projectType}". In 2-3 sentences, give a specific, practical analysis of what the developer should know about permits and compliance for this zone and project type. Be direct and actionable.${notes ? ' Additional context: ' + notes : ''}`;
+ notes = document.getElementById('descInput')?.value?.trim() || '';
+ prompt = `You are a permit and zoning expert. A property at "${address}" is zoned ${zd.zoningCode} (${zd.cityName}). The project type is "${projectType}". In 2-3 sentences, give a specific, practical analysis of what the developer should know about permits and compliance for this zone and project type. Be direct and actionable.${notes ? ' Additional context: ' + notes : ''}`;
  try {
    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
-   const response = await Promise.race([
+   response = await Promise.race([
      fetch('https://terrascope-workerjs.tmatson103.workers.dev', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
@@ -2651,14 +2651,14 @@ async function enrichAnalysisWithRealZoning(address, projectType) {
      timeout
    ]);
    if (!response.ok) return null;
-   const data = await response.json();
-   const text = data?.content?.[0]?.text;
+   data = await response.json();
+   text = data?.content?.[0]?.text;
    if (text) {
-     const el = document.getElementById('aiStreamText');
+     el = document.getElementById('aiStreamText');
      if (el) {
-       let i = 0;
+       i = 0;
        await new Promise(resolve => {
-         const tick = () => {
+         tick = () => {
            i += 3;
            el.innerHTML = text.slice(0, i) + (i < text.length ? '<span class="cursor"></span>' : '');
            if (i < text.length) requestAnimationFrame(tick);
@@ -2685,7 +2685,7 @@ async function proxyFetch(url, headers) {
     if (!res.ok) throw new Error('Proxy ' + res.status);
     return await res.json();
   } catch(e) {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Terrascope/1.0', ...(headers||{}) } });
+    res = await fetch(url, { headers: { 'User-Agent': 'Terrascope/1.0', ...(headers||{}) } });
     return await res.json();
   }
 }
@@ -2700,7 +2700,7 @@ function populateZoningInline(rawZone) {
   const zdb = (typeof NYC_ZONING_DB !== 'undefined') ? (NYC_ZONING_DB[code] || null) : null;
   const dims = (typeof NYC_DIMS !== 'undefined') ? (NYC_DIMS[code] || null) : null;
   if (!zdb && !dims) return;
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+  const set = (id, val) => { el = document.getElementById(id); if (el) el.textContent = val || '—'; };
   const nameEl = document.getElementById('zoningNameInline');
   const descEl = document.getElementById('zoningDescInline');
   if (nameEl && zdb) nameEl.textContent = zdb.name;
@@ -2849,7 +2849,7 @@ function buildChecklist(scenario) {
 
 function toggleDocItem(id) {
  checklistItems[id].checked = !checklistItems[id].checked;
- const row = document.getElementById('doc-item-' + id);
+ row = document.getElementById('doc-item-' + id);
  const check = document.getElementById('doc-check-' + id);
  if (checklistItems[id].checked) { row.classList.add('checked'); check.textContent = ''; }
  else { row.classList.remove('checked'); check.textContent = ''; }
@@ -2861,14 +2861,14 @@ function updateChecklistProgress() {
  const done = checklistItems.filter(i => i.checked).length;
  const pct = total ? Math.round(done / total * 100) : 0;
  const fill = document.getElementById('docProgressFill');
- const text = document.getElementById('docProgressText');
+ text = document.getElementById('docProgressText');
  if (fill) fill.style.width = pct + '%';
  if (text) text.textContent = `${done} / ${total} items`;
 }
 
 function downloadChecklist() {
   if (currentAddress) logActivity('download', 'Report downloaded', currentAddress + ' — ' + selectedType);
-  const s = SCENARIOS[selectedType] || SCENARIOS['default'];
+  s = SCENARIOS[selectedType] || SCENARIOS['default'];
   if (!currentAddress) {
     showToast('Run an analysis first to generate a report', 'warn', 3000);
     return;
@@ -2977,7 +2977,7 @@ function downloadChecklist() {
   ];
   const checklistHTML = checklistSections.map(sec => {
     if (!sec.items.length) return '';
-    const rows = sec.items.map(item =>
+    rows = sec.items.map(item =>
       `<tr><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;width:32px;text-align:center"><div style="width:14px;height:14px;border:2px solid #d1d5db;border-radius:3px;margin:0 auto"></div></td><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#374151">${item}</td><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right"><span style="background:${sec.tagBg};color:${sec.tagColor};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">${sec.tag}</span></td></tr>`
     ).join('');
     return `<div style="margin-bottom:20px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #e5e7eb">${sec.title}</div><table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">${rows}</table></div>`;
@@ -5338,9 +5338,9 @@ _leafletMarker = null;
 _leafletCircle = null;
 
 function initMap(address) {
-  const lat = window._selectedLat || 40.7614;
-  const lng = window._selectedLng || -73.9726;
-  const mapEl = document.getElementById('map');
+  lat = window._selectedLat || 40.7614;
+  lng = window._selectedLng || -73.9726;
+  mapEl = document.getElementById('map');
   if (!mapEl) return;
 
   // Destroy existing map
@@ -5361,7 +5361,7 @@ function initMap(address) {
   }).addTo(_leafletMap);
 
   // Custom property pin — navy/gold branded marker
-  const pinIcon = L.divIcon({
+  pinIcon = L.divIcon({
     className: '',
     html: `<div style="
       width:36px;height:44px;position:relative;
@@ -5419,16 +5419,16 @@ function initMap(address) {
 }
 
 // Stub for backward compat — not used with Leaflet
-const TMap = { create: () => null };
+TMap = { create: () => null };
 </script>
  <script>
 // STORAGE POLYFILL — falls back to localStorage when window.storage (artifact API) is unavailable
 if (!window.storage) {
   window.storage = {
-    get: async (key) => { try { const v = localStorage.getItem('ts_' + key); return v ? { key, value: v } : null; } catch(e) { return null; } },
+    get: async (key) => { try { v = localStorage.getItem('ts_' + key); return v ? { key, value: v } : null; } catch(e) { return null; } },
     set: async (key, value) => { try { localStorage.setItem('ts_' + key, value); return { key, value }; } catch(e) { return null; } },
     delete: async (key) => { try { localStorage.removeItem('ts_' + key); return { key, deleted: true }; } catch(e) { return null; } },
-    list: async (prefix) => { try { const keys = Object.keys(localStorage).filter(k => k.startsWith('ts_' + (prefix||''))).map(k => k.slice(3)); return { keys }; } catch(e) { return { keys: [] }; } },
+    list: async (prefix) => { try { keys = Object.keys(localStorage).filter(k => k.startsWith('ts_' + (prefix||''))).map(k => k.slice(3)); return { keys }; } catch(e) { return { keys: [] }; } },
   };
 }
 
@@ -5436,16 +5436,16 @@ if (!window.storage) {
 window.addEventListener('error', function(e) {
   if (!e.message || e.message === 'Script error.' || e.lineno === 0) return; // cross-origin noise
   console.error('TERRASCOPE ERROR:', e.message, 'at', e.filename, 'line', e.lineno, 'col', e.colno, e.error?.stack);
-  const btn = document.getElementById('analyzeBtn');
+  btn = document.getElementById('analyzeBtn');
   if (btn) { btn.disabled = false; }
-  const btnText = document.getElementById('btnText');
+  btnText = document.getElementById('btnText');
   if (btnText) btnText.innerHTML = 'Analyze with AI';
-  const loadingState = document.getElementById('loadingState');
+  loadingState = document.getElementById('loadingState');
   if (loadingState) loadingState.style.display = 'none';
-  const emptyState = document.getElementById('emptyState');
+  emptyState = document.getElementById('emptyState');
   if (emptyState) emptyState.style.display = '';
   // Show visible error banner
-  let errBanner = document.getElementById('_errBanner');
+  errBanner = document.getElementById('_errBanner');
   if (!errBanner) {
     errBanner = document.createElement('div');
     errBanner.id = '_errBanner';
@@ -5457,7 +5457,7 @@ window.addEventListener('error', function(e) {
 });
 window.addEventListener('unhandledrejection', function(e) {
   console.error('TERRASCOPE PROMISE ERROR:', e.reason);
-  let errBanner = document.getElementById('_errBanner');
+  errBanner = document.getElementById('_errBanner');
   if (!errBanner) {
     errBanner = document.createElement('div');
     errBanner.id = '_errBanner';
@@ -5473,7 +5473,7 @@ selectedType = 'Commercial New Build';
 currentAddress = '';
 savedProjects = [];
 mapInstance = null;
-let checklistItems = [];
+checklistItems = [];
 
 // PAGE ROUTING (see window.switchPage override below) 
 
@@ -5559,8 +5559,8 @@ function handleAddressInput(val) {
  document.getElementById('addrVerified').style.display = 'none';
  if (val.length < 3) { hideAutoComplete(); return; }
  autocompleteTimeout = setTimeout(() => {
- const q = val.toLowerCase();
- const matches = SAMPLE_ADDRESSES.filter(a =>
+ q = val.toLowerCase();
+ matches = SAMPLE_ADDRESSES.filter(a =>
  a.main.toLowerCase().includes(q) || a.sub.toLowerCase().includes(q)
  ).slice(0, 5);
  if (matches.length) showSuggestions(matches);
@@ -5569,7 +5569,7 @@ function handleAddressInput(val) {
 }
 
 function showSuggestions(items) {
- const box = document.getElementById('addrSuggestions');
+ box = document.getElementById('addrSuggestions');
  box.innerHTML = items.map(a => `
  <div class="addr-suggestion" onmousedown="selectAddress('${a.main}, ${a.sub}',${a.lat},${a.lng})"> <span style="font-size:13px"></span> <div> <div class="addr-suggestion-main">${a.main}</div> <div class="addr-suggestion-sub">${a.sub}</div> </div> </div>`).join('');
  box.style.display = 'block';
@@ -5599,9 +5599,9 @@ function selectType(btn) {
 // MAIN ANALYSIS 
 async function runAnalysis() {
  try {
- const address = document.getElementById('addressInput').value.trim();
+ address = document.getElementById('addressInput').value.trim();
  if (!address) {
- const inp = document.getElementById('addressInput');
+ inp = document.getElementById('addressInput');
  inp.style.borderColor = 'var(--red)';
  inp.style.boxShadow = '0 0 0 3px rgba(220,38,38,.1)';
  setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; inp.style.borderColor = 'var(--border)'; }, 2000);
@@ -5614,7 +5614,7 @@ async function runAnalysis() {
  window._nycDobData = null;
  window._aiSummary = '';
 
- const btn = document.getElementById('analyzeBtn');
+ btn = document.getElementById('analyzeBtn');
  btn.disabled = true;
  document.getElementById('btnText').innerHTML = '<div class="spinner"></div> Analyzing…';
  document.getElementById('reportStatus').textContent = 'Processing…';
@@ -5623,23 +5623,23 @@ async function runAnalysis() {
  document.getElementById('loadingState').style.display = 'block';
  document.getElementById('aiStreamWrap').style.display = 'none';
 
- const steps = ['step1','step2','step3','step4','step5'];
- steps.forEach(s => { const _se=document.getElementById(s); if(_se){_se.className='ls'; const _sc=_se.querySelector('.ls-circle'); if(_sc)_sc.textContent=s.replace('step','');} });
+ steps = ['step1','step2','step3','step4','step5'];
+ steps.forEach(s => { _se=document.getElementById(s); if(_se){_se.className='ls'; _sc=_se.querySelector('.ls-circle'); if(_sc)_sc.textContent=s.replace('step','');} });
 
- for (let i = 0; i < steps.length; i++) {
+ for (i = 0; i < steps.length; i++) {
  await delay(i === 2 ? 800 : 500);
- if (i > 0) { const _prev=document.getElementById(steps[i-1]); if(_prev){_prev.className='ls done'; const _pc=_prev.querySelector('.ls-circle'); if(_pc)_pc.textContent='✓';} }
+ if (i > 0) { _prev=document.getElementById(steps[i-1]); if(_prev){_prev.className='ls done'; _pc=_prev.querySelector('.ls-circle'); if(_pc)_pc.textContent='✓';} }
  document.getElementById(steps[i]).className = 'ls active';
  if (i === 0) {
    try {
-     const geo = await fetchLiveGeoData(address);
+     geo = await fetchLiveGeoData(address);
      if (geo) {
-       const lat = parseFloat(geo.lat);
-       const lng = parseFloat(geo.lon);
-       const detectedCity = detectCity(lat, lng);
-       const step2Detail = document.getElementById('step2Detail');
+       lat = parseFloat(geo.lat);
+       lng = parseFloat(geo.lon);
+       detectedCity = detectCity(lat, lng);
+       step2Detail = document.getElementById('step2Detail');
        if (detectedCity && step2Detail) {
-         const cityNames = {nyc:'NYC Open Data + DOB',chicago:'Chicago Data Portal',austin:'Austin Open Data',seattle:'Seattle GeoData',la:'LA City GeoHub',houston:'Houston GIS',phoenix:'Phoenix GIS',philadelphia:'Philadelphia Open Data',sanantonio:'San Antonio GIS',dallas:'Dallas GIS',denver:'Denver Open Data',boston:'Boston Open Data',portland:'Portland GIS',nashville:'Nashville Metro GIS',miami:'Miami-Dade GIS',atlanta:'Atlanta GIS',minneapolis:'Minneapolis GIS',kansascity:'Kansas City Open Data',saltlake:'Salt Lake City GIS',columbus:'Columbus GIS',charlotte:'Mecklenburg GIS',sanfrancisco:'SF Open Data',sandiego:'San Diego GIS',lasvegas:'Clark County GIS',pittsburgh:'Pittsburgh GIS'};
+         cityNames = {nyc:'NYC Open Data + DOB',chicago:'Chicago Data Portal',austin:'Austin Open Data',seattle:'Seattle GeoData',la:'LA City GeoHub',houston:'Houston GIS',phoenix:'Phoenix GIS',philadelphia:'Philadelphia Open Data',sanantonio:'San Antonio GIS',dallas:'Dallas GIS',denver:'Denver Open Data',boston:'Boston Open Data',portland:'Portland GIS',nashville:'Nashville Metro GIS',miami:'Miami-Dade GIS',atlanta:'Atlanta GIS',minneapolis:'Minneapolis GIS',kansascity:'Kansas City Open Data',saltlake:'Salt Lake City GIS',columbus:'Columbus GIS',charlotte:'Mecklenburg GIS',sanfrancisco:'SF Open Data',sandiego:'San Diego GIS',lasvegas:'Clark County GIS',pittsburgh:'Pittsburgh GIS'};
          step2Detail.textContent = 'Pulling from ' + (cityNames[detectedCity] || 'municipal records') + '…';
          step2Detail.style.color = 'var(--green)';
        }
@@ -5649,11 +5649,11 @@ async function runAnalysis() {
    } catch(e) { console.warn('Geo fetch error:', e); }
  }
  if (i === 2) {
-   const aiWrap = document.getElementById('aiStreamWrap');
+   aiWrap = document.getElementById('aiStreamWrap');
    if (aiWrap) aiWrap.style.display = 'block';
    try {
      if (window._realZoningData) {
-       const richAnalysis = await enrichAnalysisWithRealZoning(address, selectedType);
+       richAnalysis = await enrichAnalysisWithRealZoning(address, selectedType);
        if (richAnalysis) {
          window._aiSummary = richAnalysis;
          document.getElementById('aiStreamText').textContent = richAnalysis;
@@ -5667,10 +5667,10 @@ async function runAnalysis() {
  }
  }
  await delay(500);
- steps.forEach(s => { const el = document.getElementById(s); if(el) { el.className = 'ls done'; el.querySelector('.ls-circle').textContent = '✓'; } });
+ steps.forEach(s => { el = document.getElementById(s); if(el) { el.className = 'ls done'; el.querySelector('.ls-circle').textContent = '✓'; } });
  await delay(300);
 
- const loadingStateEl = document.getElementById('loadingState');
+ loadingStateEl = document.getElementById('loadingState');
  if (loadingStateEl) loadingStateEl.style.display = 'none';
  await renderResults(address);
  dismissNudge();
@@ -5684,13 +5684,13 @@ async function runAnalysis() {
 
  } catch(err) {
    console.error('runAnalysis error:', err);
-   const btn = document.getElementById('analyzeBtn');
+   btn = document.getElementById('analyzeBtn');
    if (btn) btn.disabled = false;
-   const btnText = document.getElementById('btnText');
+   btnText = document.getElementById('btnText');
    if (btnText) btnText.innerHTML = 'Analyze Property';
-   const loadingState = document.getElementById('loadingState');
+   loadingState = document.getElementById('loadingState');
    if (loadingState) loadingState.style.display = 'none';
-   const emptyState = document.getElementById('emptyState');
+   emptyState = document.getElementById('emptyState');
    if (emptyState) {
      emptyState.style.display = '';
      emptyState.innerHTML = `
@@ -5713,15 +5713,15 @@ async function runAnalysis() {
 
 // AI STREAMING TEXT 
 async function streamAIText(address, projectType) {
- const notes = document.getElementById('descInput')?.value?.trim() || '';
- const el = document.getElementById('aiStreamText');
+ notes = document.getElementById('descInput')?.value?.trim() || '';
+ el = document.getElementById('aiStreamText');
  if (!el) return;
  el.innerHTML = '<span class="cursor"></span>';
 
- const prompt = `You are a permit and zoning expert. In 2-3 sentences, give a brief professional analysis of what someone building a "${projectType}" at "${address}" should know about permits and compliance. Be specific and practical. No bullet points, just flowing sentences.${notes ? ' Additional context: ' + notes : ''}`;
+ prompt = `You are a permit and zoning expert. In 2-3 sentences, give a brief professional analysis of what someone building a "${projectType}" at "${address}" should know about permits and compliance. Be specific and practical. No bullet points, just flowing sentences.${notes ? ' Additional context: ' + notes : ''}`;
 
  try {
-   const response = await fetch('https://terrascope-workerjs.tmatson103.workers.dev', {
+   response = await fetch('https://terrascope-workerjs.tmatson103.workers.dev', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify({
@@ -5732,18 +5732,18 @@ async function streamAIText(address, projectType) {
    });
 
    if (!response.ok) {
-     const errData = await response.json().catch(() => ({}));
+     errData = await response.json().catch(() => ({}));
      console.error('Worker/Anthropic error:', response.status, JSON.stringify(errData));
      throw new Error('API error ' + response.status);
    }
-   const data = await response.json();
-   const text = data?.content?.[0]?.text || '';
+   data = await response.json();
+   text = data?.content?.[0]?.text || '';
    if (!text) throw new Error('No text in response');
 
    // Typewriter effect
-   let i = 0;
+   i = 0;
    await new Promise(resolve => {
-     const tick = () => {
+     tick = () => {
        i += 4;
        el.innerHTML = text.slice(0, i) + (i < text.length ? '<span class="cursor"></span>' : '');
        if (i < text.length) requestAnimationFrame(tick);
@@ -5756,15 +5756,15 @@ async function streamAIText(address, projectType) {
 
  } catch (err) {
    console.warn('AI text error:', err);
-   const fallbacks = {
+   fallbacks = {
      'Commercial New Build': `This commercial development at ${address} will require coordination across multiple city departments. Expect a building permit, electrical, plumbing, and fire safety reviews as mandatory steps before occupancy.`,
      'Residential Addition': `Adding onto a residential property at ${address} typically involves a building permit and potentially an electrical permit depending on scope. Most residential additions clear within 30–60 days in NYC.`,
      'default': `This ${projectType} project at ${address} will require coordination with the NYC DOB. Start by confirming zoning compliance, then file all required permits through DOB NOW: Build.`
    };
-   const text = fallbacks[projectType] || fallbacks['default'];
-   let i = 0;
+   text = fallbacks[projectType] || fallbacks['default'];
+   i = 0;
    await new Promise(resolve => {
-     const tick = () => {
+     tick = () => {
        i += 3;
        el.innerHTML = text.slice(0, i) + (i < text.length ? '<span class="cursor"></span>' : '');
        if (i < text.length) requestAnimationFrame(tick);
@@ -5781,13 +5781,13 @@ async function streamAIText(address, projectType) {
 // Called when a real zoning code was successfully fetched from a city's open data API.
 // Uses Claude to produce a permit-and-compliance summary that incorporates the live zoning code.
 async function enrichAnalysisWithRealZoning(address, projectType) {
- const zd = window._realZoningData;
+ zd = window._realZoningData;
  if (!zd) return null;
- const notes = document.getElementById('descInput')?.value?.trim() || '';
- const prompt = `You are a permit and zoning expert. A property at "${address}" is zoned ${zd.zoningCode} (${zd.cityName}). The project type is "${projectType}". In 2-3 sentences, give a specific, practical analysis of what the developer should know about permits and compliance for this zone and project type. Be direct and actionable.${notes ? ' Additional context: ' + notes : ''}`;
+ notes = document.getElementById('descInput')?.value?.trim() || '';
+ prompt = `You are a permit and zoning expert. A property at "${address}" is zoned ${zd.zoningCode} (${zd.cityName}). The project type is "${projectType}". In 2-3 sentences, give a specific, practical analysis of what the developer should know about permits and compliance for this zone and project type. Be direct and actionable.${notes ? ' Additional context: ' + notes : ''}`;
  try {
-   const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
-   const response = await Promise.race([
+   timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000));
+   response = await Promise.race([
      fetch('https://terrascope-workerjs.tmatson103.workers.dev', {
        method: 'POST',
        headers: { 'Content-Type': 'application/json' },
@@ -5796,14 +5796,14 @@ async function enrichAnalysisWithRealZoning(address, projectType) {
      timeout
    ]);
    if (!response.ok) return null;
-   const data = await response.json();
-   const text = data?.content?.[0]?.text;
+   data = await response.json();
+   text = data?.content?.[0]?.text;
    if (text) {
-     const el = document.getElementById('aiStreamText');
+     el = document.getElementById('aiStreamText');
      if (el) {
-       let i = 0;
+       i = 0;
        await new Promise(resolve => {
-         const tick = () => {
+         tick = () => {
            i += 3;
            el.innerHTML = text.slice(0, i) + (i < text.length ? '<span class="cursor"></span>' : '');
            if (i < text.length) requestAnimationFrame(tick);
@@ -5823,14 +5823,14 @@ async function enrichAnalysisWithRealZoning(address, projectType) {
 
 async function proxyFetch(url, headers) {
   try {
-    const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/proxy', {
+    res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/proxy', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, headers: headers || {} })
     });
     if (!res.ok) throw new Error('Proxy ' + res.status);
     return await res.json();
   } catch(e) {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Terrascope/1.0', ...(headers||{}) } });
+    res = await fetch(url, { headers: { 'User-Agent': 'Terrascope/1.0', ...(headers||{}) } });
     return await res.json();
   }
 }
@@ -5838,19 +5838,19 @@ async function proxyFetch(url, headers) {
 
 function populateZoningInline(rawZone) {
   if (!rawZone) return;
-  const code = rawZone.toString()
+  code = rawZone.toString()
     .replace(/^NYC[\s\u00B7\u2022\u2013\u2014\-]+/i, '')
     .split(/[\u00B7\u2022\u2013\u2014]/)[0]
     .trim().toUpperCase().replace(/\s+/g, '');
-  const zdb = (typeof NYC_ZONING_DB !== 'undefined') ? (NYC_ZONING_DB[code] || null) : null;
-  const dims = (typeof NYC_DIMS !== 'undefined') ? (NYC_DIMS[code] || null) : null;
+  zdb = (typeof NYC_ZONING_DB !== 'undefined') ? (NYC_ZONING_DB[code] || null) : null;
+  dims = (typeof NYC_DIMS !== 'undefined') ? (NYC_DIMS[code] || null) : null;
   if (!zdb && !dims) return;
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || '—'; };
-  const nameEl = document.getElementById('zoningNameInline');
-  const descEl = document.getElementById('zoningDescInline');
+  set = (id, val) => { el = document.getElementById(id); if (el) el.textContent = val || '—'; };
+  nameEl = document.getElementById('zoningNameInline');
+  descEl = document.getElementById('zoningDescInline');
   if (nameEl && zdb) nameEl.textContent = zdb.name;
   if (descEl && zdb) { descEl.textContent = zdb.tagline; descEl.style.display = 'block'; }
-  const dimsEl = document.getElementById('zoningDimsInline');
+  dimsEl = document.getElementById('zoningDimsInline');
   if (dimsEl) {
     dimsEl.style.display = 'block';
     if (dims) {
@@ -5867,15 +5867,15 @@ function populateZoningInline(rawZone) {
       set('inlineSbSide','Per base'); set('inlineSbCorner','Per base');
     }
   }
-  const usesEl = document.getElementById('inlineUses');
+  usesEl = document.getElementById('inlineUses');
   if (usesEl && zdb?.uses) {
-    const cm={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
-    const bm={green:'var(--green-pale)',amber:'var(--amber-pale)',red:'#fef2f2'};
+    cm={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
+    bm={green:'var(--green-pale)',amber:'var(--amber-pale)',red:'#fef2f2'};
     usesEl.innerHTML = zdb.uses.map(u =>
       '<span style="display:inline-flex;align-items:center;gap:4px;background:'+(bm[u.c]||'var(--slate)')+';border:1px solid '+(cm[u.c]||'var(--border)')+';border-radius:var(--radius-pill);padding:3px 9px;font-size:var(--text-sm);color:var(--navy);font-weight:600"><span style="width:5px;height:5px;border-radius:50%;background:'+(cm[u.c]||'var(--text3)')+';flex-shrink:0"></span>'+u.t+'</span>'
     ).join('');
   }
-  const gotchasEl = document.getElementById('inlineGotchas');
+  gotchasEl = document.getElementById('inlineGotchas');
   if (gotchasEl && zdb?.gotchas?.length) {
     gotchasEl.style.display = 'block';
     gotchasEl.innerHTML = '<div style="font-size:var(--text-sm);font-weight:700;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Watch Out For</div><div style="display:flex;flex-direction:column;gap:6px">'
@@ -5885,38 +5885,38 @@ function populateZoningInline(rawZone) {
 }
 
 async function renderResults(address) {
- const s = SCENARIOS[selectedType] || SCENARIOS['default'];
+ s = SCENARIOS[selectedType] || SCENARIOS['default'];
 
- const resultAddressEl = document.getElementById('resultAddress');
- const zoningBadgeEl = document.getElementById('zoningBadge');
- const timelineLabelEl = document.getElementById('timelineLabel');
- const timelineValueEl = document.getElementById('timelineValue');
- const aiSummaryEl = document.getElementById('aiSummaryText');
+ resultAddressEl = document.getElementById('resultAddress');
+ zoningBadgeEl = document.getElementById('zoningBadge');
+ timelineLabelEl = document.getElementById('timelineLabel');
+ timelineValueEl = document.getElementById('timelineValue');
+ aiSummaryEl = document.getElementById('aiSummaryText');
 
  if (resultAddressEl) resultAddressEl.textContent = address;
  if (zoningBadgeEl) zoningBadgeEl.textContent = s.zoning;
  if (timelineLabelEl) timelineLabelEl.textContent = s.timelineLabel;
  if (timelineValueEl) timelineValueEl.textContent = s.timeline;
- const mapBadge = document.getElementById('mapOverlayBadge');
+ mapBadge = document.getElementById('mapOverlayBadge');
  if (mapBadge) mapBadge.textContent = (window._realZoningData?.zoningCode) || s.zoning;
  if (aiSummaryEl) aiSummaryEl.textContent = window._aiSummary || 'Analysis complete. Review permit requirements below.';
 
  // Permits
- const pl = document.getElementById('permitList');
+ pl = document.getElementById('permitList');
  if (pl) {
    pl.innerHTML = '';
    s.permits.forEach(p => {
-     const dc = p.level === 'required' ? 'p-req' : p.level === 'conditional' ? 'p-cond' : 'p-opt';
+     dc = p.level === 'required' ? 'p-req' : p.level === 'conditional' ? 'p-cond' : 'p-opt';
      pl.innerHTML += `<li class="permit-item"><div class="p-dot ${dc}"></div><div><div class="p-name">${p.name}</div><div class="p-desc">${p.desc}</div></div></li>`;
    });
  }
 
  // Risks
- const rf = document.getElementById('riskFlags');
+ rf = document.getElementById('riskFlags');
  if (rf) {
    rf.innerHTML = '';
    s.risks.forEach(r => {
-     const rc = r.level === 'high' ? 'r-high' : r.level === 'med' ? 'r-med' : 'r-low';
+     rc = r.level === 'high' ? 'r-high' : r.level === 'med' ? 'r-med' : 'r-low';
      rf.innerHTML += `<div class="risk-item ${rc}">${r.text}</div>`;
    });
  }
@@ -5943,9 +5943,9 @@ async function renderResults(address) {
  // Show result
  document.getElementById('resultState').style.display = 'block';
  populateZoningInline(s.zoning);
- const reportTabBtn = document.querySelector('.result-tab[onclick*="\'report\'"]') || document.querySelector('.result-tab');
+ reportTabBtn = document.querySelector('.result-tab[onclick*="\'report\'"]') || document.querySelector('.result-tab');
  switchResultTab('report', reportTabBtn);
- const revealEl = document.getElementById('resultState').querySelector('.reveal');
+ revealEl = document.getElementById('resultState').querySelector('.reveal');
  if (revealEl) { revealEl.style.animation = 'none'; void revealEl.offsetWidth; revealEl.style.animation = ''; }
 
  // Init map after short delay
@@ -5958,10 +5958,10 @@ async function renderResults(address) {
 // CHECKLIST 
 function buildChecklist(scenario) {
  checklistItems = [];
- const container = document.getElementById('docChecklist');
+ container = document.getElementById('docChecklist');
  if (!container) return;
 
- const sections = [
+ sections = [
  { title: 'Required Documents to Submit', items: scenario.permits.filter(p => p.level === 'required').map(p => ({label: p.name + ' Application', tag: 'req', checked: false})) },
  { title: 'Conditional Requirements', items: scenario.permits.filter(p => p.level === 'conditional').map(p => ({label: p.name + ' (if applicable)', tag: 'cond', checked: false})) },
  { title: 'General Site Documents', items: [
@@ -5974,13 +5974,13 @@ function buildChecklist(scenario) {
 
  sections.forEach(section => {
  if (!section.items.length) return;
- const sec = document.createElement('div');
+ sec = document.createElement('div');
  sec.className = 'doc-section';
  sec.innerHTML = `<div class="doc-section-title">${section.title}</div>`;
  section.items.forEach((item, i) => {
- const id = checklistItems.length;
+ id = checklistItems.length;
  checklistItems.push({...item});
- const row = document.createElement('div');
+ row = document.createElement('div');
  row.className = 'doc-item';
  row.id = 'doc-item-' + id;
  row.onclick = () => toggleDocItem(id);
@@ -5994,48 +5994,48 @@ function buildChecklist(scenario) {
 
 function toggleDocItem(id) {
  checklistItems[id].checked = !checklistItems[id].checked;
- const row = document.getElementById('doc-item-' + id);
- const check = document.getElementById('doc-check-' + id);
+ row = document.getElementById('doc-item-' + id);
+ check = document.getElementById('doc-check-' + id);
  if (checklistItems[id].checked) { row.classList.add('checked'); check.textContent = ''; }
  else { row.classList.remove('checked'); check.textContent = ''; }
  updateChecklistProgress();
 }
 
 function updateChecklistProgress() {
- const total = checklistItems.length;
- const done = checklistItems.filter(i => i.checked).length;
- const pct = total ? Math.round(done / total * 100) : 0;
- const fill = document.getElementById('docProgressFill');
- const text = document.getElementById('docProgressText');
+ total = checklistItems.length;
+ done = checklistItems.filter(i => i.checked).length;
+ pct = total ? Math.round(done / total * 100) : 0;
+ fill = document.getElementById('docProgressFill');
+ text = document.getElementById('docProgressText');
  if (fill) fill.style.width = pct + '%';
  if (text) text.textContent = `${done} / ${total} items`;
 }
 
 function downloadChecklist() {
   if (currentAddress) logActivity('download', 'Checklist downloaded', currentAddress + ' — ' + selectedType);
- const s = SCENARIOS[selectedType] || SCENARIOS['default'];
+ s = SCENARIOS[selectedType] || SCENARIOS['default'];
  if (!currentAddress) {
  showToast('Run an analysis first to generate a report', 'warn', 3000);
  return;
  }
 
- const date = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
- const aiText = window._aiSummary || '';
+ date = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+ aiText = window._aiSummary || '';
 
  const permits = s.permits.map(p => {
- const levelColor = p.level === 'required' ? '#dc2626' : p.level === 'conditional' ? '#d97706' : '#059669';
- const levelLabel = p.level === 'required' ? 'REQUIRED' : p.level === 'conditional' ? 'CONDITIONAL' : 'OPTIONAL';
+ levelColor = p.level === 'required' ? '#dc2626' : p.level === 'conditional' ? '#d97706' : '#059669';
+ levelLabel = p.level === 'required' ? 'REQUIRED' : p.level === 'conditional' ? 'CONDITIONAL' : 'OPTIONAL';
  return `<tr> <td style="padding:10px 12px;font-weight:600;color:#1B2B4B;border-bottom:1px solid #e5e7eb">${p.name}</td> <td style="padding:10px 12px;color:#374151;border-bottom:1px solid #e5e7eb;font-size:13px">${p.desc}</td> <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap"> <span style="background:${p.level==='required'?'#fee2e2':p.level==='conditional'?'#fef9c3':'#dcfce7'};color:${levelColor};padding:2px 8px;border-radius:var(--radius-pill);font-size:11px;font-weight:700">${levelLabel}</span> </td> </tr>`;
  }).join('');
 
- const risks = s.risks.map(r => {
- const bg = r.level === 'high' ? '#fee2e2' : r.level === 'med' ? '#fef9c3' : '#dcfce7';
- const border = r.level === 'high' ? '#fca5a5' : r.level === 'med' ? '#fcd34d' : '#86efac';
+ risks = s.risks.map(r => {
+ bg = r.level === 'high' ? '#fee2e2' : r.level === 'med' ? '#fef9c3' : '#dcfce7';
+ border = r.level === 'high' ? '#fca5a5' : r.level === 'med' ? '#fcd34d' : '#86efac';
  return `<div style="background:${bg};border:1px solid ${border};border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px;font-size:13px;color:#374151">${r.text}</div>`;
  }).join('');
 
  // Build checklist HTML from scenario data
- const checklistSections = [
+ checklistSections = [
    { title: 'Required Documents to Submit', tagColor:'#dc2626', tagBg:'#fee2e2', tag:'REQUIRED',
      items: s.permits.filter(p => p.level === 'required').map(p => p.name + ' Application') },
    { title: 'Conditional Requirements', tagColor:'#d97706', tagBg:'#fef9c3', tag:'CONDITIONAL',
@@ -6045,9 +6045,9 @@ function downloadChecklist() {
    { title: 'Pre-Filing Steps', tagColor:'#1d4ed8', tagBg:'#dbeafe', tag:'ACTION',
      items: ['Confirm zoning classification with NYC DCP','Verify no open violations at this address','Schedule pre-application meeting with DOB (if new building)','Engage a licensed PE or RA to certify plans','Check for landmark designation (LPC)','Order title search and survey'] },
  ];
- const checklistHTML = checklistSections.map(sec => {
+ checklistHTML = checklistSections.map(sec => {
    if (!sec.items.length) return '';
-   const rows = sec.items.map(item =>
+   rows = sec.items.map(item =>
      '<tr>'
      + '<td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;width:36px;text-align:center">'
      + '<div style="width:16px;height:16px;border:2px solid #d1d5db;border-radius:3px;margin:0 auto"></div>'
@@ -6064,7 +6064,7 @@ function downloadChecklist() {
  }).join('');
 
 
- const html = `<!DOCTYPE html>
+ html = `<!DOCTYPE html>
 <html>
 <head> <meta charset="UTF-8"> <title>Terrascope Report — ${currentAddress}</title> <style>
  * { margin:0; padding:0; box-sizing:border-box; }
@@ -6130,11 +6130,11 @@ function downloadChecklist() {
 </body>
 </html>`;
 
- const blob = new Blob([html], { type: 'text/html' });
- const url = URL.createObjectURL(blob);
+ blob = new Blob([html], { type: 'text/html' });
+ url = URL.createObjectURL(blob);
 
  // Direct download as HTML file (opens cleanly, user can print-to-PDF)
- const a = document.createElement('a');
+ a = document.createElement('a');
  a.href = url;
  a.download = `terrascope-report-${currentAddress.replace(/[^a-z0-9]/gi,'-').toLowerCase().slice(0,40)}.html`;
  document.body.appendChild(a);
@@ -6199,17 +6199,17 @@ async function fetchRealZoning(lat, lng) {
   if (!city) return null;
 
   try {
-    let zoningCode = null;
+    zoningCode = null;
     let zoningLabel = null;
     let source = null;
 
     if (city === 'nyc') {
       // NYC Planning — correct MapPLUTO dataset
-      const res = await fetch(
+      res = await fetch(
         `https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZoneDist1,LandUse,BldgClass&f=json&distance=80&units=esriSRUnit_Meter`,
         { headers: { 'Accept': 'application/json' } }
       );
-      const data = await res.json();
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZoneDist1 || f.LandUse || 'Mixed Use';
@@ -6220,10 +6220,10 @@ async function fetchRealZoning(lat, lng) {
 
     if (city === 'chicago') {
       // Chicago — ArcGIS zoning service
-      const res = await fetch(
+      res = await fetch(
         `https://services5.arcgis.com/LjiDyDRNwHKiHoGV/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zone_class,zone_type,label&f=json&distance=80&units=esriSRUnit_Meter`
       );
-      const data = await res.json();
+      data = await res.json();
       if (data?.features?.length > 0) {
         zoningCode = data.features[0].attributes?.zone_class || data.features[0].attributes?.label || 'B3-2';
         zoningLabel = `Chicago · ${zoningCode}`;
@@ -6233,11 +6233,11 @@ async function fetchRealZoning(lat, lng) {
 
     if (city === 'austin') {
       // Austin — correct zoning dataset ID
-      const res = await fetch(
+      res = await fetch(
         `https://services.arcgis.com/0dkp2fYSk60b38Zz/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_TYPE,ZONE_DESC,BASEZONE&f=json&distance=150&units=esriSRUnit_Meter`,
         { headers: { 'Accept': 'application/json' } }
       );
-      const data = await res.json();
+      data = await res.json();
       if (data && data.length > 0) {
         const af = data?.features?.[0]?.attributes || (Array.isArray(data) && data[0]) || {}; zoningCode = af.ZONE_TYPE || af.BASEZONE || af.ZONE_DESC || af.zoning_ztype_desc || 'SF-3';
         zoningLabel = `Austin · ${zoningCode}`;
@@ -6247,10 +6247,10 @@ async function fetchRealZoning(lat, lng) {
 
     if (city === 'seattle') {
       // Seattle — ArcGIS zoning layer
-      const res = await fetch(
+      res = await fetch(
         `https://services.arcgis.com/ZOyb2t4B0UYuYNYH/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONELUT,ZONE_DESC,ZONECAT&f=json&distance=150&units=esriSRUnit_Meter`
       );
-      const data = await res.json();
+      data = await res.json();
       if (data?.features?.length > 0) {
         zoningCode = data.features[0].attributes?.ZONELUT || data.features[0].attributes?.ZONE_DESC || 'NC2-40';
         zoningLabel = `Seattle · ${zoningCode}`;
@@ -6260,11 +6260,11 @@ async function fetchRealZoning(lat, lng) {
 
     if (city === 'la') {
       // LA City GeoHub — wider radius + more fields
-      const res = await fetch(
+      res = await fetch(
         `https://services5.arcgis.com/7nsPwEMP38bSkCjy/arcgis/rest/services/LA_City_Zoning_Info/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_CLASS,ZONE_SMRY,ZONE_CMPLT&f=json&distance=150&units=esriSRUnit_Meter`,
         { headers: { 'Accept': 'application/json' } }
       );
-      const data = await res.json();
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_CMPLT || f.ZONE_CLASS || f.ZONE_SMRY || 'C2';
@@ -6275,8 +6275,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── HOUSTON (ArcGIS) ──
     if (city === 'houston') {
-      const res = await fetch(`https://cohegis.houstontx.gov/cohgisweb/rest/services/PD/PD_Base_Layers/MapServer/4/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=HCAD_NUM,LAND_USE_D&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://cohegis.houstontx.gov/cohgisweb/rest/services/PD/PD_Base_Layers/MapServer/4/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=HCAD_NUM,LAND_USE_D&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         zoningCode = data.features[0].attributes?.LAND_USE_D || 'Commercial';
         zoningLabel = `Houston · ${zoningCode}`;
@@ -6286,8 +6286,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── PHOENIX (ArcGIS — corrected endpoint) ──
     if (city === 'phoenix') {
-      const res = await fetch(`https://services.arcgis.com/ubm4tcTYICKBpist/arcgis/rest/services/Zoning_Districts_Phoenix/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,GEN_ZON&f=json&distance=80&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services.arcgis.com/ubm4tcTYICKBpist/arcgis/rest/services/Zoning_Districts_Phoenix/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,GEN_ZON&f=json&distance=80&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.GEN_ZON || f.ZONE_DESC || 'C-2';
@@ -6298,8 +6298,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── PHILADELPHIA (ArcGIS) ──
     if (city === 'philadelphia') {
-      const res = await fetch(`https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Zoning_BaseDistricts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=CODE,LONG_CODE&f=json&distance=50&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Zoning_BaseDistricts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=CODE,LONG_CODE&f=json&distance=50&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.CODE || f.LONG_CODE || 'CMX-2';
@@ -6310,8 +6310,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── SAN ANTONIO (ArcGIS) ──
     if (city === 'sanantonio') {
-      const res = await fetch(`https://gis.sanantonio.gov/arcgis/rest/services/Planning/ZoningDistricts/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONING_DESC,BASEZON&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://gis.sanantonio.gov/arcgis/rest/services/Planning/ZoningDistricts/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONING_DESC,BASEZON&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.ZONING_DESC || 'C-2';
@@ -6322,8 +6322,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── DALLAS (ArcGIS) ──
     if (city === 'dallas') {
-      const res = await fetch(`https://services5.arcgis.com/74bZbbuf05Ctvbzv/arcgis/rest/services/City_of_Dallas_Base_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_DIST,ZONE_DESC,BASEZONE&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services5.arcgis.com/74bZbbuf05Ctvbzv/arcgis/rest/services/City_of_Dallas_Base_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_DIST,ZONE_DESC,BASEZONE&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_DIST || f.ZONE_DESC || 'CR';
@@ -6334,8 +6334,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── DENVER (ArcGIS — corrected) ──
     if (city === 'denver') {
-      const res = await fetch(`https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_LAND_ZONING_P/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_DISTRICT,ZONE_DESC&f=json&distance=80&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_LAND_ZONING_P/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_DISTRICT,ZONE_DESC&f=json&distance=80&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_DISTRICT || f.ZONE_DESC || 'C-MX-5';
@@ -6346,8 +6346,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── BOSTON (ArcGIS) ──
     if (city === 'boston') {
-      const res = await fetch(`https://services.arcgis.com/sFnw0xNflSi8J0uh/arcgis/rest/services/Zoning_Subdistricts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,SUBDISTRIC,BRA_PD&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services.arcgis.com/sFnw0xNflSi8J0uh/arcgis/rest/services/Zoning_Subdistricts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,SUBDISTRIC,BRA_PD&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_ || f.SUBDISTRIC || 'MFR';
@@ -6358,8 +6358,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── PORTLAND (ArcGIS) ──
     if (city === 'portland') {
-      const res = await fetch(`https://www.portlandmaps.com/arcgis/rest/services/Public/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,ZONE_DESC,ZONE_NAME&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://www.portlandmaps.com/arcgis/rest/services/Public/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,ZONE_DESC,ZONE_NAME&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_ || f.ZONE_DESC || 'CS';
@@ -6370,8 +6370,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── NASHVILLE (ArcGIS) ──
     if (city === 'nashville') {
-      const res = await fetch(`https://maps.nashville.gov/arcgis/rest/services/Zoning/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_TYPE,DESCRIPTION,BASE_ZONE&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://maps.nashville.gov/arcgis/rest/services/Zoning/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_TYPE,DESCRIPTION,BASE_ZONE&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_TYPE || f.DESCRIPTION || 'CF';
@@ -6382,8 +6382,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── MIAMI (ArcGIS) ──
     if (city === 'miami') {
-      const res = await fetch(`https://gis.miamidade.gov/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,MUN_CODE&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://gis.miamidade.gov/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,MUN_CODE&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.ZONE_DESC || 'BU-1A';
@@ -6394,8 +6394,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── ATLANTA (ArcGIS) ──
     if (city === 'atlanta') {
-      const res = await fetch(`https://services1.arcgis.com/Ug5xGQbHsD8zuZzM/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,ZONING_DIS&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services1.arcgis.com/Ug5xGQbHsD8zuZzM/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,ZONING_DIS&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.ZONE_DESC || 'C-1';
@@ -6406,8 +6406,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── MINNEAPOLIS (ArcGIS) ──
     if (city === 'minneapolis') {
-      const res = await fetch(`https://opendata.arcgis.com/datasets/Minneapolis_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING_COD,ZONE_NAME,ZONE_ABBR&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://opendata.arcgis.com/datasets/Minneapolis_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING_COD,ZONE_NAME,ZONE_ABBR&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING_COD || f.ZONE_NAME || 'C2';
@@ -6418,8 +6418,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── KANSAS CITY (ArcGIS — corrected) ──
     if (city === 'kansascity') {
-      const res = await fetch(`https://services6.arcgis.com/Bd4MACzvEukoZ9mR/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC&f=json&distance=80&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services6.arcgis.com/Bd4MACzvEukoZ9mR/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC&f=json&distance=80&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.ZONE_DESC || 'B3-2';
@@ -6430,8 +6430,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── SALT LAKE CITY (ArcGIS — corrected) ──
     if (city === 'saltlake') {
-      const res = await fetch(`https://services1.arcgis.com/WjH7bRsf7p0INbwH/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE,ZONE_NAME,ZONE_ABBR&f=json&distance=80&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services1.arcgis.com/WjH7bRsf7p0INbwH/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE,ZONE_NAME,ZONE_ABBR&f=json&distance=80&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_ABBR || f.ZONE || f.ZONE_NAME || 'CC';
@@ -6442,8 +6442,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── COLUMBUS (ArcGIS) ──
     if (city === 'columbus') {
-      const res = await fetch(`https://maps2.columbus.gov/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,ZONE_TYPE,ZONING_DIS&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://maps2.columbus.gov/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE_,ZONE_TYPE,ZONING_DIS&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE_ || f.ZONE_TYPE || 'C-2';
@@ -6454,8 +6454,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── CHARLOTTE (ArcGIS) ──
     if (city === 'charlotte') {
-      const res = await fetch(`https://services.arcgis.com/aJ16ENn1AaqdFlqx/arcgis/rest/services/OpenMapping_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,DESCRIPT,ZONING_TYPE&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services.arcgis.com/aJ16ENn1AaqdFlqx/arcgis/rest/services/OpenMapping_Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,DESCRIPT,ZONING_TYPE&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.DESCRIPT || f.ZONING_TYPE || 'B-1';
@@ -6466,8 +6466,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── SAN FRANCISCO (ArcGIS — corrected) ──
     if (city === 'sanfrancisco') {
-      const res = await fetch(`https://services2.arcgis.com/p2nVfgZLYSw0D4bV/arcgis/rest/services/SF_Zoning_Districts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoning_sim,districtname&f=json&distance=80&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services2.arcgis.com/p2nVfgZLYSw0D4bV/arcgis/rest/services/SF_Zoning_Districts/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=zoning,zoning_sim,districtname&f=json&distance=80&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.zoning || f.zoning_sim || f.districtname || 'NC-3';
@@ -6478,8 +6478,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── SAN DIEGO (ArcGIS) ──
     if (city === 'sandiego') {
-      const res = await fetch(`https://services2.arcgis.com/Sf0q24s0oDKgX14j/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE,ZONE_NAME,ZONE_DESC&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services2.arcgis.com/Sf0q24s0oDKgX14j/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONE,ZONE_NAME,ZONE_DESC&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONE || f.ZONE_NAME || 'CC-4-2';
@@ -6490,8 +6490,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── LAS VEGAS (ArcGIS) ──
     if (city === 'lasvegas') {
-      const res = await fetch(`https://maps.lvcva.com/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,DESCRIPTION&f=json&distance=50&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://maps.lvcva.com/arcgis/rest/services/Zoning/MapServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,DESCRIPTION&f=json&distance=50&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.DESCRIPTION || 'C-1';
@@ -6502,8 +6502,8 @@ async function fetchRealZoning(lat, lng) {
 
     // ── PITTSBURGH (ArcGIS) ──
     if (city === 'pittsburgh') {
-      const res = await fetch(`https://services1.arcgis.com/vdNDkVykv9vEWFX4/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,ZONE_TYPE&f=json&distance=150&units=esriSRUnit_Meter`);
-      const data = await res.json();
+      res = await fetch(`https://services1.arcgis.com/vdNDkVykv9vEWFX4/arcgis/rest/services/Zoning/FeatureServer/0/query?geometry=${lng},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=ZONING,ZONE_DESC,ZONE_TYPE&f=json&distance=150&units=esriSRUnit_Meter`);
+      data = await res.json();
       if (data?.features?.length > 0) {
         const f = data.features[0].attributes;
         zoningCode = f.ZONING || f.ZONE_DESC || 'LNC';
@@ -6587,7 +6587,7 @@ async function fetchNYCDobData(address) {
     let historicalPermits = [];
 
     if (nowRes.status === 'fulfilled' && nowRes.value.ok) {
-      const data = await nowRes.value.json();
+      data = await nowRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
         activePermits = data.map(p => ({
           type: p.work_permit_type || p.filing_status || 'Permit',
@@ -6600,7 +6600,7 @@ async function fetchNYCDobData(address) {
     }
 
     if (histRes.status === 'fulfilled' && histRes.value.ok) {
-      const data = await histRes.value.json();
+      data = await histRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
         historicalPermits = data.map(p => ({
           type: p.permit_type || p.work_type || 'Permit',
@@ -6616,7 +6616,7 @@ async function fetchNYCDobData(address) {
     // Process DOB violations
     let dobViolations = [];
     if (violRes.status === 'fulfilled' && violRes.value.ok) {
-      const data = await violRes.value.json();
+      data = await violRes.value.json();
       if (Array.isArray(data)) {
         dobViolations = data.map(v => ({
           type: 'DOB',
@@ -6634,7 +6634,7 @@ async function fetchNYCDobData(address) {
     // Process ECB violations
     let ecbViolations = [];
     if (ecbRes.status === 'fulfilled' && ecbRes.value.ok) {
-      const data = await ecbRes.value.json();
+      data = await ecbRes.value.json();
       if (Array.isArray(data)) {
         ecbViolations = data.map(v => ({
           type: 'ECB',
@@ -6652,7 +6652,7 @@ async function fetchNYCDobData(address) {
     // Process Stop Work Orders
     let stopWorkOrders = [];
     if (swRes.status === 'fulfilled' && swRes.value.ok) {
-      const data = await swRes.value.json();
+      data = await swRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
         stopWorkOrders = data.map(v => ({
           jobNum: v.job__ || '',
@@ -6728,11 +6728,11 @@ function applyNYCDobToUI(dobData) {
   const permitRows = shown.map(p => {
     const jobType = (p.jobType || p.type || '').toUpperCase().trim().split(' ')[0] || 'N/A';
     // p.desc is the work_type code (e.g. "OT", "MH", "PL") when job_description is empty
-    const descRaw = (p.desc || '').trim();
+    descRaw = (p.desc || '').trim();
     const descCode = descRaw.toUpperCase();
     const workTypeLookup = PERMIT_CODES[descCode];
 
-    const jobInfo = PERMIT_CODES[jobType] || { label: jobType, desc: 'Permit filed with NYC DOB', color: '#6b7280' };
+    jobInfo = PERMIT_CODES[jobType] || { label: jobType, desc: 'Permit filed with NYC DOB', color: '#6b7280' };
 
     // Full description: if desc is a known code show its label, else show raw desc
     const fullDesc = workTypeLookup
@@ -6741,7 +6741,7 @@ function applyNYCDobToUI(dobData) {
 
     const rawDate = p.date || '';
     const dateObj = rawDate ? new Date(rawDate) : null;
-    const dateStr = dateObj && !isNaN(dateObj)
+    dateStr = dateObj && !isNaN(dateObj)
       ? dateObj.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
       : '';
 
@@ -6796,8 +6796,8 @@ function applyNYCDobToUI(dobData) {
     const openDOB = (dobData.dobViolations || []).filter(v => v.isOpen);
     const openECB = (dobData.ecbViolations || []).filter(v => v.isOpen);
     const allOpen = dobData.openViolations || [];
-    const swos = dobData.stopWorkOrders || [];
-    const hasRisk = allOpen.length > 0 || swos.length > 0;
+    swos = dobData.stopWorkOrders || [];
+    hasRisk = allOpen.length > 0 || swos.length > 0;
 
     // Summary bar
     const summaryBar = `
@@ -6840,7 +6840,7 @@ function applyNYCDobToUI(dobData) {
       const statusBg = isOpen ? '#fef2f2' : '#f0fdf4';
       const statusColor = isOpen ? '#dc2626' : '#059669';
       const statusText = isOpen ? 'OPEN' : 'RESOLVED';
-      const dateStr = v.date ? new Date(v.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+      dateStr = v.date ? new Date(v.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
       const fineStr = v.balanceDue && parseFloat(v.balanceDue) > 0 ? ` · Balance due: $${parseFloat(v.balanceDue).toLocaleString()}` : v.fine ? ` · Fine: $${parseFloat(v.fine).toLocaleString()}` : '';
 
       return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px">
@@ -6857,7 +6857,7 @@ function applyNYCDobToUI(dobData) {
       </div>`;
     }).join('');
 
-    const emptyState = dobData.allViolations.length === 0 && swos.length === 0
+    emptyState = dobData.allViolations.length === 0 && swos.length === 0
       ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:var(--text-base)">✓ No violations or stop work orders found on record</div>` : '';
 
     const warningBanner = hasRisk ? `
@@ -6908,7 +6908,7 @@ function applyRealZoningToUI(zoningData) {
   // Override the zoning badge with real data
   const badge = document.getElementById('zoningBadge');
   if (badge) badge.textContent = zoningData.zoningLabel;
-  const mapBadge = document.getElementById('mapOverlayBadge');
+  mapBadge = document.getElementById('mapOverlayBadge');
   if (mapBadge) mapBadge.textContent = zoningData.zoningLabel;
   // Update live data banner source
   const src = document.getElementById('liveDataSource');
@@ -6929,12 +6929,12 @@ async function fetchLiveGeoData(address) {
  liveGeoData = null;
  try {
  const encoded = encodeURIComponent(address);
- const res = await fetch(
+ res = await fetch(
  `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&addressdetails=1&limit=1`,
  { headers: { 'Accept-Language': 'en-US', 'User-Agent': 'Terrascope/1.0' } }
  );
  if (!res.ok) throw new Error('Nominatim error');
- const data = await res.json();
+ data = await res.json();
  if (data && data.length > 0) {
  liveGeoData = data[0];
  window._selectedLat = parseFloat(liveGeoData.lat);
@@ -7004,7 +7004,7 @@ const CONTRACTOR_SEED = [
 const CONTRACTOR_EMOJIS = {'General Contractor':'','Structural Engineer':'','MEP Engineer':'','Civil Engineer':'','Electrician':'','Plumber':'','HVAC Contractor':'','Environmental Consultant':'','Fire Suppression Contractor':'','Solar Installer':'','Pool Contractor':'','Demolition Contractor':'','Telecom Contractor':'','Medical Construction Specialist':'','Historic Preservation Contractor':'','Commercial Kitchen Specialist':'','ADA Compliance Specialist':'','Fencing Contractor':'','Lighting Electrician':'','Paving Contractor':'','RF Engineer':'','Fire Safety Engineer':'','Interior Designer':'','X-Ray Shielding Contractor':'','Framing Contractor':'','Hauling & Disposal':''};
 
 function buildContractorDirectory(projectType, geoData) {
-  const container = document.getElementById('contractorList');
+  container = document.getElementById('contractorList');
   if (!container) return;
   const types = CONTRACTOR_TYPES[projectType] || CONTRACTOR_TYPES['Commercial New Build'];
   const city = geoData?.address?.city || geoData?.address?.town || geoData?.address?.village || '';
@@ -7017,7 +7017,7 @@ function buildContractorDirectory(projectType, geoData) {
 
   // Build search links per contractor type
   const searchLinks = types.map(type => {
-    const q = encodeURIComponent(`${type} near ${nearLocation}`);
+    q = encodeURIComponent(`${type} near ${nearLocation}`);
     const gmapsUrl = `https://www.google.com/maps/search/${q}`;
     const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(type)}&find_loc=${encodeURIComponent(nearLocation)}`;
     return { type, gmapsUrl, yelpUrl };
@@ -7074,8 +7074,8 @@ let _liveAlerts = null;
 
 async function fetchLiveAlerts() {
   try {
-    const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/alerts');
-    const data = await res.json();
+    res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/alerts');
+    data = await res.json();
     if (data?.alerts?.length) {
       _liveAlerts = data.alerts;
       renderAlerts();
@@ -7086,7 +7086,7 @@ async function fetchLiveAlerts() {
 }
 
 function renderAlerts() {
-  const container = document.getElementById('alertsList');
+  container = document.getElementById('alertsList');
   if (!container) return;
   const rawAlerts = _liveAlerts || CODE_ALERTS;
 
@@ -7106,7 +7106,7 @@ function renderAlerts() {
   const visible = alerts.filter(a => !dismissedAlerts.has(a.id));
   const count = visible.length;
   ['alertCountBadge','alertCountInner'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.textContent = count;
+    el = document.getElementById(id); if (el) el.textContent = count;
   });
 
   if (!count) {
@@ -7134,7 +7134,7 @@ function renderAlerts() {
 
 function dismissAlert(id, e) {
   e.stopPropagation(); dismissedAlerts.add(id);
-  const el = document.getElementById('alert-'+id);
+  el = document.getElementById('alert-'+id);
   if (el) { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>renderAlerts(),300); }
 }
 function dismissAllAlerts() {
@@ -7165,8 +7165,8 @@ const FEE_TOTALS = {'Commercial New Build':'$4,375–$13,600','Residential Addit
 
 function buildFees(s) {
  const fees = FEE_DATA[selectedType] || FEE_DATA['Commercial New Build'];
- const total = FEE_TOTALS[selectedType] || '$2,000–$8,000';
- const container = document.getElementById('feesList');
+ total = FEE_TOTALS[selectedType] || '$2,000–$8,000';
+ container = document.getElementById('feesList');
  if (!container) return;
  container.innerHTML = '';
  fees.forEach(f => { container.innerHTML += `<div class="fee-row"><span class="fee-name">${f.name}</span><span class="fee-amount">${f.amt}</span></div>`; });
@@ -7200,7 +7200,7 @@ async function saveToProjects() {
  if (savedProjects.find(p => p.addr === currentAddress && p.type === selectedType)) {
    showToast('This report is already saved.', 'warn'); return;
  }
- const s = SCENARIOS[selectedType] || SCENARIOS['default'];
+ s = SCENARIOS[selectedType] || SCENARIOS['default'];
  const newProject = {
    id: Date.now(), addr: currentAddress, type: selectedType,
    status: 'active', progress: 15, timeline: s.timeline,
@@ -7235,12 +7235,12 @@ async function loadSavedProjects() {
   // Try server first if logged in
   if (window._tsToken) {
     try {
-      const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/projects/load', {
+      res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/projects/load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: window._tsToken }),
       });
-      const data = await res.json();
+      data = await res.json();
       if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
         savedProjects = data.projects;
         renderDashboard();
@@ -7252,7 +7252,7 @@ async function loadSavedProjects() {
   try {
     const local = localStorage.getItem('ts_saved-projects');
     if (local) {
-      const data = JSON.parse(local);
+      data = JSON.parse(local);
       if (Array.isArray(data) && data.length > 0) { savedProjects = data; renderDashboard(); }
     }
   } catch(e) {}
@@ -7381,7 +7381,7 @@ function shareVia(platform, a, b) {
 
 function copyShareUrl() {
  const input = document.getElementById('shareUrlInput');
- const btn = document.getElementById('copyShareBtn');
+ btn = document.getElementById('copyShareBtn');
  if (!input || !btn) return;
  navigator.clipboard?.writeText(input.value).catch(() => {
  input.select(); document.execCommand('copy');
@@ -7562,8 +7562,8 @@ function showForgot(e) {
 async function submitResetPassword(token) {
   const pw = document.getElementById('resetPwInput')?.value;
   const confirm = document.getElementById('resetPwConfirm')?.value;
-  const btn = document.getElementById('resetSubmitBtn');
-  const btnText = document.getElementById('resetSubmitText');
+  btn = document.getElementById('resetSubmitBtn');
+  btnText = document.getElementById('resetSubmitText');
   const err = document.getElementById('resetPwError');
 
   if (!pw || pw.length < 8) { showToast('Password must be at least 8 characters', 'warn'); return; }
@@ -7574,12 +7574,12 @@ async function submitResetPassword(token) {
   if (btnText) btnText.innerHTML = '<div class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle"></div> Updating…';
 
   try {
-    const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/auth/reset', {
+    res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/auth/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, password: pw }),
     });
-    const data = await res.json();
+    data = await res.json();
     if (data.error) {
       btn.disabled = false;
       if (btnText) btnText.textContent = 'Set New Password';
@@ -7619,8 +7619,8 @@ function handleForgotPassword(e){
 
 function handleEmailAuth(e){
   e.preventDefault();
-  const btn = document.getElementById('authSubmit');
-  const btnText = document.getElementById('authSubmitText');
+  btn = document.getElementById('authSubmit');
+  btnText = document.getElementById('authSubmitText');
   const isSignup = document.getElementById('authMode')?.value === 'signup';
   const email = document.getElementById('authEmail')?.value?.trim();
   const password = document.getElementById('authPassword')?.value;
@@ -7696,7 +7696,7 @@ function updateAuthUI(user) {
 
 // TOAST SYSTEM 
 function showToast(msg, type='', duration=3500) {
- const container = document.getElementById('toastContainer');
+ container = document.getElementById('toastContainer');
  const toast = document.createElement('div');
  const icons = {'success':'','warn':'','error':'','':``};
  toast.className = `toast${type ? ' toast-'+type : ''}`;
@@ -7732,10 +7732,10 @@ function buildProgressTracker(scenario) {
 function renderProgressTracker(stage) {
   const stages = document.getElementById('trackerStages');
   const bar = document.getElementById('trackerBar');
-  const pct = document.getElementById('trackerPct');
+  pct = document.getElementById('trackerPct');
   if (!stages) return;
 
-  const total = PERMIT_STAGES.length;
+  total = PERMIT_STAGES.length;
   const pctVal = Math.round((stage / (total - 1)) * 100);
   if (bar) bar.style.width = pctVal + '%';
   if (pct) {
@@ -7790,7 +7790,7 @@ function renderProgressTracker(stage) {
 window._trackerTimestamps = window._trackerTimestamps || {};
 
 function advanceTrackerTo(stageIndex) {
-  const total = PERMIT_STAGES.length;
+  total = PERMIT_STAGES.length;
   if (stageIndex < 0 || stageIndex >= total) return;
   // Record timestamp when marking a stage as current
   if (!window._trackerTimestamps[stageIndex]) {
@@ -7832,7 +7832,7 @@ function showStageDetail(e, stageIndex) {
   const existing = document.getElementById('stageDetailPopover');
   if (existing) existing.remove();
 
-  const s = PERMIT_STAGES[stageIndex];
+  s = PERMIT_STAGES[stageIndex];
   const isDone = stageIndex < _trackerStage;
   const isCurrent = stageIndex === _trackerStage;
   const ts = window._trackerTimestamps && window._trackerTimestamps[stageIndex];
@@ -7968,7 +7968,7 @@ function renderTourStep() {
  `<div class="tour-dot ${i===tourStep?'active':''}"></div>`).join('');
 
  if (step.target) {
- const el = document.querySelector(step.target);
+ el = document.querySelector(step.target);
  if (el) {
  const rect = el.getBoundingClientRect();
  const pad = 8;
@@ -8059,7 +8059,7 @@ function switchPage(page) {
     (async () => {
       try {
         const r = await window.storage.get('deal-inputs');
-        if (r) { const vals = JSON.parse(r.value); Object.entries(vals).forEach(([id,val]) => { const el = document.getElementById(id); if (el && val) el.value = val; }); recalcDeal(); }
+        if (r) { const vals = JSON.parse(r.value); Object.entries(vals).forEach(([id,val]) => { el = document.getElementById(id); if (el && val) el.value = val; }); recalcDeal(); }
       } catch(e) {}
     })();
   }
@@ -8087,7 +8087,7 @@ function calcNYCFees() {
   const input = document.getElementById('jobCostInput');
   const jobCost = parseFloat(input?.value) || 0;
   const breakdown = document.getElementById('feeBreakdown');
-  const emptyState = document.getElementById('feeEmptyState');
+  emptyState = document.getElementById('feeEmptyState');
 
   if (!jobCost || jobCost <= 0) {
     if (breakdown) breakdown.style.display = 'none';
@@ -8126,7 +8126,7 @@ function calcNYCFees() {
   // Site Safety Manager (required for jobs >= $2M)
   const siteSafetyFee = jobCost >= 2000000 ? 3200 : 0;
 
-  const total = planExamFee + filingFee + issuanceFee + coFee + siteSafetyFee;
+  total = planExamFee + filingFee + issuanceFee + coFee + siteSafetyFee;
 
   // Timeline based on job cost
   let timeline = '';
@@ -8193,7 +8193,7 @@ function toggleOtherTypes(btn) {
 
 function closeOtherTypes() {
   const panel = document.getElementById('otherTypesPanel');
-  const btn = document.getElementById('otherTypeBtn');
+  btn = document.getElementById('otherTypeBtn');
   if (panel) panel.style.display = 'none';
   if (btn) { btn.textContent = 'Other ▾'; btn.classList.remove('active'); }
 }
@@ -8263,7 +8263,7 @@ function onAppReady() {
      if (r) {
        const state = JSON.parse(r.value);
        if (state && Date.now() - state.ts < 7*24*60*60*1000 && state.address) {
-         const inp = document.getElementById('addressInput');
+         inp = document.getElementById('addressInput');
          if (inp) inp.value = state.address;
          currentAddress = state.address;
          if (state.type) {
@@ -8399,7 +8399,7 @@ let npsShown = false;
 function showNpsSurvey() {
  if (npsShown) return;
  npsShown = true;
- const container = document.getElementById('npsSurvey');
+ container = document.getElementById('npsSurvey');
  if (!container) return;
  container.style.display = 'block';
  container.innerHTML = `
@@ -8411,7 +8411,7 @@ function selectNps(score) {
  npsScore = score;
  document.querySelectorAll('#npsScale .nps-btn').forEach((b,i) => b.classList.toggle('selected', i === score));
  const c = document.getElementById('npsComment');
- const s = document.getElementById('npsSubmitBtn');
+ s = document.getElementById('npsSubmitBtn');
  if (c) c.style.display = 'block';
  if (s) s.style.display = 'inline-block';
 }
@@ -8468,7 +8468,7 @@ function copyReferralLink() {
  const link = 'https://app.terrascope.com/early-access';
  navigator.clipboard?.writeText(link).catch(()=>{});
  showToast(' Referral link copied! Share it with a colleague for $10 credit each.', 'success', 4000);
- const btn = document.querySelector('.referral-copy-btn');
+ btn = document.querySelector('.referral-copy-btn');
  if (btn) { btn.textContent=' Copied!'; setTimeout(()=>btn.textContent='Copy link', 2000); }
 }
 
@@ -8489,11 +8489,11 @@ function setFar(val) {
  });
 }
 function toggleFarHelp() {
- const box = document.getElementById('farHelpBox');
+ box = document.getElementById('farHelpBox');
  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 function toggleCoverageHelp() {
- const box = document.getElementById('coverageHelpBox');
+ box = document.getElementById('coverageHelpBox');
  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 
@@ -8528,11 +8528,11 @@ function recalcDeal() {
   try {
     const inputs = ['dealPurchase','dealDown','dealRate','dealBuildCost','dealSoftCost','dealRent','dealVacancy','dealOpex','dealSalePrice','dealSellCost','dealHoldMonths','dealLotSize','dealCoverage'];
     const vals = {};
-    inputs.forEach(id => { const el = document.getElementById(id); if (el) vals[id] = el.value; });
+    inputs.forEach(id => { el = document.getElementById(id); if (el) vals[id] = el.value; });
     window.storage.set('deal-inputs', JSON.stringify(vals));
   } catch(e) {}
   // Guard against NaN/Infinity
-  const safeNum = (id, def=0) => { const v = parseFloat(document.getElementById(id)?.value); return (isNaN(v) || v < 0) ? def : v; };
+  const safeNum = (id, def=0) => { v = parseFloat(document.getElementById(id)?.value); return (isNaN(v) || v < 0) ? def : v; };
  const purchase = v('dealPurchase');
  const down = v('dealDown');
  const rate = v('dealRate') / 100;
@@ -8750,7 +8750,7 @@ function generateDealInsights(roi, profit, totalCost, type, units) {
 
 function resetDeal() {
  ['dealPurchase','dealDown','dealRate','dealBuildCost','dealSoftCost','dealRent','dealVacancy','dealOpex','dealSalePrice','dealSellCost','dealHoldMonths','dealLotSize','dealFar','dealUnitSize','dealCoverage'].forEach(id => {
- const el = document.getElementById(id);
+ el = document.getElementById(id);
  if (el) el.value = '';
  });
  document.getElementById('dealEmpty').style.display = 'block';
@@ -8775,13 +8775,13 @@ async function generateParcels() {
   try {
     // NYC MapPLUTO open data — find underbuilt parcels where residential units < what zoning allows
     // Filter: has residential units, built before 1990, not maxed out, has a zoning district
-    const url = `https://data.cityofnewyork.us/resource/64uk-42ks.json?` +
+    url = `https://data.cityofnewyork.us/resource/64uk-42ks.json?` +
       `$where=unitsres > 0 AND unitsres < unitstotal AND yearbuilt < 1990 AND zonedist1 IS NOT NULL AND lotarea > 2000` +
       `&$select=address,borocode,block,lot,zonedist1,bldgclass,lotarea,bldgarea,numfloors,yearbuilt,unitsres,unitstotal,assessland,assesstot,latitude,longitude,ownername` +
       `&$limit=120&$order=assessland DESC`;
 
-    const res = await fetch(url, {headers:{'Accept':'application/json'}});
-    const data = await res.json();
+    res = await fetch(url, {headers:{'Accept':'application/json'}});
+    data = await res.json();
 
     if(!data?.length) throw new Error('No data');
 
@@ -8797,8 +8797,8 @@ async function generateParcels() {
     };
 
     return data.map((p, i) => {
-      const lat = parseFloat(p.latitude) || 0;
-      const lng = parseFloat(p.longitude) || 0;
+      lat = parseFloat(p.latitude) || 0;
+      lng = parseFloat(p.longitude) || 0;
       const currentUnits = parseInt(p.unitsres) || 0;
       const totalUnits = parseInt(p.unitstotal) || currentUnits;
       const lotSf = parseInt(p.lotarea) || 0;
@@ -8879,7 +8879,7 @@ function initOpportunityFinder() {
     renderOppCards();
     if(loadingEl) loadingEl.style.display = 'none';
 
-    const mapEl = document.getElementById('oppMap');
+    mapEl = document.getElementById('oppMap');
     if(!mapEl) return;
     mapEl.style.height = '';
     mapEl.style.width = '';
@@ -8962,7 +8962,7 @@ function getFilteredParcels() {
 
 function renderOppCards() {
  const parcels = getFilteredParcels();
- const container = document.getElementById('oppCards');
+ container = document.getElementById('oppCards');
  const countEl = document.getElementById('oppListCount');
  countEl.textContent = `${parcels.length} parcel${parcels.length!==1?'s':''} found`;
  if (!parcels.length) {
@@ -9061,25 +9061,25 @@ function handleOppSearch(val) {
 }
 
 function showOppSuggestionsLoading() {
- const box = document.getElementById('oppSuggestions');
+ box = document.getElementById('oppSuggestions');
  if (!box) return;
  box.innerHTML = `<div class="opp-suggestion-loading"><div class="spinner" style="width:14px;height:14px;border-width:2px;border-color:var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></div> Searching…</div>`;
  box.style.display = 'block';
 }
 
 async function fetchOppSuggestions(query) {
- const box = document.getElementById('oppSuggestions');
+ box = document.getElementById('oppSuggestions');
  if (!box) return;
 
  // Try Nominatim first
  let results = [];
  try {
- const res = await fetch(
+ res = await fetch(
  `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&countrycodes=us`,
  { headers: { 'Accept-Language': 'en-US', 'User-Agent': 'Terrascope/1.0' } }
  );
  if (res.ok) {
- const data = await res.json();
+ data = await res.json();
  results = data.map(r => {
  const addr = r.address || {};
  const main = addr.house_number ? `${addr.house_number} ${addr.road || ''}`.trim()
@@ -9094,7 +9094,7 @@ async function fetchOppSuggestions(query) {
 
  // Fallback: filter SAMPLE_ADDRESSES if no network
  if (!results.length) {
- const q = query.toLowerCase();
+ q = query.toLowerCase();
  results = SAMPLE_ADDRESSES
  .filter(a => a.main.toLowerCase().includes(q) || a.sub.toLowerCase().includes(q))
  .slice(0, 6)
@@ -9103,7 +9103,7 @@ async function fetchOppSuggestions(query) {
 
  // Also add US cities that match
  if (results.length < 4) {
- const q = query.toLowerCase();
+ q = query.toLowerCase();
  const cityMatches = [
  // Top 50 metros
  'New York, NY','Los Angeles, CA','Chicago, IL','Houston, TX','Phoenix, AZ',
@@ -9184,7 +9184,7 @@ async function fetchOppSuggestions(query) {
 }
 
 function renderOppSuggestions(results) {
- const box = document.getElementById('oppSuggestions');
+ box = document.getElementById('oppSuggestions');
  if (!box) return;
  if (!results.length) {
  box.innerHTML = `<div class="opp-suggestion-loading" style="color:var(--text3)">No results found</div>`;
@@ -9215,14 +9215,14 @@ function selectOppSuggestion(e, result) {
 
 function hideOppSuggestions() {
  setTimeout(() => {
- const box = document.getElementById('oppSuggestions');
+ box = document.getElementById('oppSuggestions');
  if (box) box.style.display = 'none';
  oppSuggestionIndex = -1;
  }, 150);
 }
 
 function handleOppSearchKey(e) {
- const box = document.getElementById('oppSuggestions');
+ box = document.getElementById('oppSuggestions');
  const items = box?.querySelectorAll('.opp-suggestion') || [];
  if (e.key === 'ArrowDown') {
  e.preventDefault();
@@ -9315,7 +9315,7 @@ async function z1lookup() {
     const geoData = await geoRes.json();
     if (!geoData?.length) throw new Error('Address not found');
 
-    const lat = parseFloat(geoData[0].lat);
+    lat = parseFloat(geoData[0].lat);
     const lon = parseFloat(geoData[0].lon);
     const displayAddr = geoData[0].display_name?.split(',').slice(0,3).join(',') || val;
 
@@ -9377,7 +9377,7 @@ async function z1lookup() {
 }
 
 function z2initChips(){
- const el=document.getElementById('z2chips');
+ el=document.getElementById('z2chips');
  if(!el||el.innerHTML) return;
  el.innerHTML=Z2_OVERLAYS.map((o,i)=>`<div onclick="z2select(${i})" style="padding:7px 8px;border-radius:var(--radius-md);background:${o.bg};color:${o.color};font-size:var(--text-base);font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s" id="z2c${i}">${o.name}</div>`).join('');
 }
@@ -9421,7 +9421,7 @@ const Z4_ALERTS=[
  {level:'info',icon:'ℹ️',text:'NYC DOB NOW: Build expanded — all new job filings, including ALT-2 and ALT-3 applications, must be submitted through DOB NOW. Paper filings no longer accepted.',date:'Fully in effect'},
 ];
 function z4initFeed(){
- const el=document.getElementById('z4feed');
+ el=document.getElementById('z4feed');
  if(!el||el.innerHTML) return;
  el.innerHTML=Z4_ALERTS.map(a=>`<div class="tc-alert ${a.level}"><span>${a.icon}</span><div style="flex:1"><div>${a.text}</div><div style="font-size:var(--text-sm);opacity:.6;margin-top:2px;font-family:var(--mono)">${a.date}</div></div></div>`).join('');
 }
@@ -9514,13 +9514,13 @@ function z6setTopic(topic, btn) {
  document.querySelectorAll('.z6-topic').forEach(b => b.classList.remove('active'));
  if (btn) btn.classList.add('active');
  // Force re-render
- const el = document.getElementById('z6table');
+ el = document.getElementById('z6table');
  if (el) el.innerHTML = '';
  z6renderTable();
 }
 
 function z6renderTable() {
- const el = document.getElementById('z6table');
+ el = document.getElementById('z6table');
  if (!el) return;
  const d = Z6_DATA[z6currentTopic];
  if (!d) return;
@@ -9605,12 +9605,12 @@ const Z8_ITEMS={
 };
 function z8render(){
  const type=document.getElementById('z8type')?.value||'addition';
- const data=Z8_ITEMS[type]; if(!data) return;
- let html='';
+ data=Z8_ITEMS[type]; if(!data) return;
+ html='';
  Object.entries(data).forEach(([sec,items])=>{
  html+=`<div class="tc-section-hd">${sec}</div>`;
  items.forEach((item,i)=>{
- const id=`z8_${type}_${sec.replace(/\W/g,'')}_${i}`;
+ id=`z8_${type}_${sec.replace(/\W/g,'')}_${i}`;
  html+=`<label class="tc-check-item" id="lz8_${id}"><input type="checkbox" id="${id}" onchange="z8progress('${type}')"> ${item}</label>`;
  });
  });
@@ -9621,7 +9621,7 @@ function z8render(){
 function z8progress(type){
  const all=document.querySelectorAll('#z8list input[type=checkbox]');
  const chk=[...all].filter(c=>c.checked).length;
- const pct=all.length?Math.round(chk/all.length*100):0;
+ pct=all.length?Math.round(chk/all.length*100):0;
  document.getElementById('z8bar').style.width=pct+'%';
  document.getElementById('z8status').textContent=`${chk} of ${all.length} complete${pct===100?' — Ready to apply! ':''}`;
  all.forEach(c=>{const l=document.getElementById('lz8_'+c.id);if(l)l.classList.toggle('done',c.checked);});
@@ -9671,7 +9671,7 @@ function p3update(){
  const city=document.getElementById('p3city')?.value||'austin';
  const d=P3_CITIES[city]; if(!d) return;
  const maxDays=900;
- const pct=Math.min(100,Math.round(d.median/maxDays*100));
+ pct=Math.min(100,Math.round(d.median/maxDays*100));
  const color=d.median<=60?'var(--green)':d.median<=150?'var(--amber)':'var(--red)';
  document.getElementById('p3result').innerHTML=
  `<div style="font-weight:700;color:var(--navy);font-size:var(--text-base);margin-bottom:6px">${d.label}</div>`+
@@ -9683,8 +9683,8 @@ function p3update(){
 
 // PERMIT TOOL 4: Status Tracker 
 function p4renderSteps(){
- const el=document.getElementById('p4steps'); if(!el||el.innerHTML) return;
- const steps=[{l:'Submitted',icon:'',s:'done'},{l:'Plan Check',icon:'',s:'active'},{l:'Corrections',icon:'',s:''},{l:'Approved',icon:'',s:''},{l:'Inspections',icon:'',s:''}];
+ el=document.getElementById('p4steps'); if(!el||el.innerHTML) return;
+ steps=[{l:'Submitted',icon:'',s:'done'},{l:'Plan Check',icon:'',s:'active'},{l:'Corrections',icon:'',s:''},{l:'Approved',icon:'',s:''},{l:'Inspections',icon:'',s:''}];
  el.innerHTML=steps.map((s,i)=>`<div class="tc-step ${s.s}"><div style="height:2px;background:${s.s?'var(--navy)':'var(--border)'};position:absolute;top:11px;left:-50%;right:50%;z-index:0;${i===0?'display:none':''}"></div><div class="tc-step-dot">${s.s==='done'?'':s.s==='active'?'':''}</div><div>${s.l}</div></div>`).join('');
 }
 
@@ -9705,14 +9705,14 @@ function p6log(){
 // PERMIT TOOL 7: Expiration Alerts 
 const P7_PERMITS=[]
 function p7renderFeed(){
- const el=document.getElementById('p7feed'); if(!el||el.innerHTML) return;
+ el=document.getElementById('p7feed'); if(!el||el.innerHTML) return;
  if(P7_PERMITS.length === 0){
    el.innerHTML='<div class="tc-alert info"><span>ℹ</span><div style="line-height:1.6"><strong>No permits tracked yet.</strong><br>Save a project from the Analyzer to start tracking permit expiration dates here.</div></div>';
    return;
  }
  el.innerHTML=P7_PERMITS.map(p=>{
  const c=p.daysLeft<=30?'high':p.daysLeft<=60?'med':'ok';
- const icon=p.daysLeft<=30?'':p.daysLeft<=60?'':'';
+ icon=p.daysLeft<=30?'':p.daysLeft<=60?'':'';
  return `<div class="tc-alert ${c}"><span>${icon}</span><div style="flex:1"><strong>${p.addr}</strong><div style="font-size:var(--text-base);opacity:.8;margin-top:1px">${p.type} · Issued ${p.issued}</div></div><div style="font-family:var(--mono);font-weight:700;font-size:var(--text-base);white-space:nowrap">${p.daysLeft} days left</div></div>`;
  }).join('');
 }
@@ -9728,7 +9728,7 @@ const P8_TABLE=[
  {city:'San Francisco, CA',medDays:280,fees:'$10k–$38k',digital:'Partial',fastTrack:'No'},
 ];
 function p8renderTable(){
- const el=document.getElementById('p8table'); if(!el||el.innerHTML) return;
+ el=document.getElementById('p8table'); if(!el||el.innerHTML) return;
  const badge=(v,good,bad)=>`<span class="tc-badge ${v===good?'green':v===bad?'red':'amber'}">${v}</span>`;
  el.innerHTML=`<table class="tc-table"><thead><tr><th>City</th><th>Median Wait</th><th>Est. Fees</th><th>E-Permit</th></tr></thead><tbody>`+
  P8_TABLE.map(r=>`<tr><td style="font-weight:600;color:var(--navy);font-size:var(--text-base)">${r.city}</td><td style="font-family:var(--mono);font-weight:700;color:${r.medDays<=90?'var(--green)':r.medDays<=200?'var(--amber)':'var(--red)'}">${r.medDays>365?Math.round(r.medDays/30)+'mo':r.medDays+'d'}</td><td style="font-size:var(--text-base);color:var(--text2)">${r.fees}</td><td>${badge(r.digital,'Yes','No')}</td></tr>`).join('')+
@@ -9760,7 +9760,7 @@ const P10_RECENT=[
  {level:'info',icon:'ℹ',text:'ADU fast-track permit programs now active in LA, Sacramento, San Jose, Austin, and Denver.',date:'Oct 2025'},
 ];
 function p10renderFeed(){
- const el=document.getElementById('p10feed'); if(!el) return;
+ el=document.getElementById('p10feed'); if(!el) return;
  el.innerHTML=P10_RECENT.map(a=>`<div class="tc-alert ${a.level}"><span>${a.icon}</span><div style="flex:1"><div>${a.text}</div><div style="font-size:var(--text-sm);opacity:.6;margin-top:2px;font-family:var(--mono)">${a.date}</div></div></div>`).join('');
 }
 function p10subscribe(){
@@ -9975,8 +9975,8 @@ function handleZoningInput(val) {
  clearTimeout(zoningAutoTimeout);
  if (val.length < 3) { hideZoningSuggestions(); return; }
  zoningAutoTimeout = setTimeout(() => {
- const q = val.toLowerCase();
- const matches = SAMPLE_ADDRESSES.filter(a =>
+ q = val.toLowerCase();
+ matches = SAMPLE_ADDRESSES.filter(a =>
  a.main.toLowerCase().includes(q) || a.sub.toLowerCase().includes(q)
  ).slice(0, 5);
  if (matches.length) showZoningSuggestions(matches);
@@ -9985,7 +9985,7 @@ function handleZoningInput(val) {
 }
 
 function showZoningSuggestions(items) {
- const box = document.getElementById('zoningSuggestions');
+ box = document.getElementById('zoningSuggestions');
  box.innerHTML = items.map(a => `
  <div class="zoning-suggestion" onmousedown="fillZoningAddr('${a.main}, ${a.sub}')"> <span style="font-size:13px"></span> <div> <div class="zoning-suggestion-main">${a.main}</div> <div class="zoning-suggestion-sub">${a.sub}</div> </div> </div>`).join('');
  box.style.display = 'block';
@@ -9993,7 +9993,7 @@ function showZoningSuggestions(items) {
 
 function hideZoningSuggestions() {
  setTimeout(() => {
- const box = document.getElementById('zoningSuggestions');
+ box = document.getElementById('zoningSuggestions');
  if (box) box.style.display = 'none';
  }, 150);
 }
@@ -10011,7 +10011,7 @@ async function runZoningLookup() {
  setTimeout(() => document.getElementById('zoningAddrInput').style.borderColor = '', 1500);
  return;
  }
- const btn = document.getElementById('zoningLookupBtn');
+ btn = document.getElementById('zoningLookupBtn');
  btn.disabled = true;
  document.getElementById('zoningBtnIcon').textContent = '';
  document.getElementById('zoningBtnText').innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:white;display:inline-block;border-radius:50%;animation:spin .7s linear infinite"></div> Looking up…';
@@ -10022,8 +10022,8 @@ async function runZoningLookup() {
  try {
    let geoData = null;
    try {
-     const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&addressdetails=1&limit=1`, { headers:{'Accept-Language':'en-US','User-Agent':'Terrascope/1.0'} });
-     const data = await res.json();
+     res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&addressdetails=1&limit=1`, { headers:{'Accept-Language':'en-US','User-Agent':'Terrascope/1.0'} });
+     data = await res.json();
      if (data?.length) geoData = data[0];
    } catch(e) {
      // Geocode failed — show friendly error
@@ -10124,16 +10124,16 @@ function populateZoningResults(p, addr, city, state, county, geoData) {
 }
 
 async function fetchZoningAI(addr, profile) {
- const el = document.getElementById('zoningAiSummary');
+ el = document.getElementById('zoningAiSummary');
  try {
- const prompt = `You are a zoning expert. In 2 sentences, summarize the key practical implications for a developer or buyer of a property at "${addr}" in a ${profile.code} ${profile.name} zone. Focus on what they can build and what restrictions matter most. Be specific and actionable.`;
+ prompt = `You are a zoning expert. In 2 sentences, summarize the key practical implications for a developer or buyer of a property at "${addr}" in a ${profile.code} ${profile.name} zone. Focus on what they can build and what restrictions matter most. Be specific and actionable.`;
  const resp = await fetch('https://terrascope-workerjs.tmatson103.workers.dev', {
  method:'POST',
  headers:{'Content-Type':'application/json'},
  body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:150, messages:[{role:'user',content:prompt}] })
  });
- const data = await resp.json();
- const text = data?.content?.[0]?.text;
+ data = await resp.json();
+ text = data?.content?.[0]?.text;
  if (text) el.textContent = text;
  } catch(e) { /* keep fallback text */ }
 }
@@ -10143,7 +10143,7 @@ const CITY_WAITLIST_KEY = 'ts_city_waitlist';
 
 // Seed some realistic initial counts using storage
 async function initCityCounters() {
-  const container = document.getElementById('cityCounters');
+  container = document.getElementById('cityCounters');
   if (!container) return;
 
   const defaults = [
@@ -10235,9 +10235,9 @@ function _runDemo() {
   // Reset UI to blank state
   const addr  = document.getElementById('demoAddr');
   const cur   = document.getElementById('demoCursor');
-  const res   = document.getElementById('demoResult');
+  res   = document.getElementById('demoResult');
   ['demoStep1','demoStep2','demoStep3'].forEach(id => {
-    const el = document.getElementById(id);
+    el = document.getElementById(id);
     if (el) el.className = 'demo-step';
   });
   if (addr)  { addr.textContent = ''; addr.style.opacity = '1'; }
@@ -10280,7 +10280,7 @@ function _runDemo() {
 }
 
 function _setStep(id, state) {
-  const el = document.getElementById(id);
+  el = document.getElementById(id);
   if (!el) return;
   el.className = 'demo-step' + (state === 'active' ? ' demo-active' : state === 'done' ? ' demo-done' : '');
 }
@@ -10314,7 +10314,7 @@ function initScrollReveal() {
 function navScrollTo(id) {
  switchPage('home');
  setTimeout(() => {
- const el = document.getElementById(id);
+ el = document.getElementById(id);
  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
  }, 220);
 }
@@ -10362,7 +10362,7 @@ function copyText(text, btn) {
  showToast(' Copied to clipboard!', 'success', 2000);
 }
 function copyApiSample(btn) {
- const code = `const terrascope = require('@terrascope/sdk');\n\nconst report = await terrascope.analyze({\n address: '550 Madison Ave, NY',\n projectType: 'office_space',\n apiKey: process.env.TERRASCOPE_KEY\n});\n\nconsole.log(report.zoning);\nconsole.log(report.timeline);\nconsole.log(report.permits);\nconsole.log(report.fees.total);`;
+ code = `const terrascope = require('@terrascope/sdk');\n\nconst report = await terrascope.analyze({\n address: '550 Madison Ave, NY',\n projectType: 'office_space',\n apiKey: process.env.TERRASCOPE_KEY\n});\n\nconsole.log(report.zoning);\nconsole.log(report.timeline);\nconsole.log(report.permits);\nconsole.log(report.fees.total);`;
  navigator.clipboard?.writeText(code).catch(() => {});
  if (btn) { const orig = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = orig, 1500); }
  showToast(' Code sample copied!', 'success', 2000);
@@ -10399,7 +10399,7 @@ function sendChatMessage() {
  const input = document.getElementById('chatInput');
  const msgs = document.getElementById('chatMessages');
  if (!input || !msgs) return;
- const text = input.value.trim();
+ text = input.value.trim();
  if (!text) return;
  msgs.innerHTML += `<div style="display:flex;justify-content:flex-end;margin-top:4px"><div style="background:var(--navy);border-radius:var(--radius-md) 10px 0 10px;padding:9px 12px;font-size:var(--text-base);color:white;max-width:80%;line-height:1.45">${text}</div></div>`;
  input.value = '';
@@ -10432,7 +10432,7 @@ async function loadActivityList() {
   try { const r = await window.storage.get('user-activity'); if (r) renderActivityList(JSON.parse(r.value)); } catch(e) {}
 }
 function renderActivityList(entries) {
-  const el = document.getElementById('activityList');
+  el = document.getElementById('activityList');
   if (!el || !entries || entries.length === 0) return;
   const iconMap = { report:'ai-blue', save:'ai-green', download:'ai-navy', alert:'ai-amber', zoning:'ai-blue' };
   const timeAgo = (ts) => { const d = Math.round((Date.now()-ts)/60000); if(d<1) return 'Just now'; if(d<60) return d+'m ago'; if(d<1440) return Math.round(d/60)+'h ago'; return Math.round(d/1440)+'d ago'; };
@@ -10456,7 +10456,7 @@ const MI_DATASETS = [
     url:()=>`https://data.cityofnewyork.us/resource/ipu4-2q9a.json?$limit=30&$order=issuance_date+DESC`,
     parse:(row)=>({type:'zoning',addr:formatDOBAddr(row.house__,row.street_name,row.borough),desc:row.permit_type?(row.permit_type+' — '+(row.work_type||'')).trim():'Permit issued',cost:null,date:row.issuance_date,borough:row.borough}) }
 ];
-function formatDOBAddr(house,street,borough){const bm={'MANHATTAN':'Manhattan','BROOKLYN':'Brooklyn','QUEENS':'Queens','BRONX':'Bronx','STATEN IS':'Staten Island'};const b=bm[borough]||borough||'NYC';if(!house&&!street)return b;return[house,street].filter(Boolean).join(' ')+', '+b;}
+function formatDOBAddr(house,street,borough){bm={'MANHATTAN':'Manhattan','BROOKLYN':'Brooklyn','QUEENS':'Queens','BRONX':'Bronx','STATEN IS':'Staten Island'};const b=bm[borough]||borough||'NYC';if(!house&&!street)return b;return[house,street].filter(Boolean).join(' ')+', '+b;}
 function formatMiDate(dateStr){if(!dateStr)return'';try{const d=Math.round((Date.now()-new Date(dateStr))/3600000);if(d<1)return'Just now';if(d<24)return d+'h ago';return Math.round(d/24)+'d ago';}catch(e){return'';}}
 async function fetchMarketIntelligence(){
   const loading=document.getElementById('miFeedLoading'),list=document.getElementById('miFeedList'),empty=document.getElementById('miFeedEmpty');
@@ -10464,7 +10464,7 @@ async function fetchMarketIntelligence(){
   loading.style.display='block';if(list)list.style.display='none';if(empty)empty.style.display='none';
   miAllItems=[];
   try{const cached=await window.storage.get('nyc-mi-feed',true);if(cached){const p=JSON.parse(cached.value);if(Date.now()-p.fetchedAt<6*60*60*1000){miAllItems=p.items;miFetchedAt=p.fetchedAt;renderMiFeed();return;}}}catch(e){}
-  const results=await Promise.allSettled(MI_DATASETS.map(async ds=>{try{const res=await fetch(ds.url(),{headers:{'Accept':'application/json'}});if(!res.ok)return[];const data=await res.json();return(data||[]).map(row=>({...ds.parse(row),badgeClass:ds.badgeClass,label:ds.label}));}catch(e){return[];}}));
+  const results=await Promise.allSettled(MI_DATASETS.map(async ds=>{try{res=await fetch(ds.url(),{headers:{'Accept':'application/json'}});if(!res.ok)return[];data=await res.json();return(data||[]).map(row=>({...ds.parse(row),badgeClass:ds.badgeClass,label:ds.label}));}catch(e){return[];}}));
   results.forEach(r=>{if(r.status==='fulfilled')miAllItems.push(...r.value);});
   miAllItems.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
   miFetchedAt=Date.now();
@@ -10486,7 +10486,7 @@ function renderMiFeed(){
   const filtered=miCurrentFilter==='all'?miAllItems:miAllItems.filter(i=>i.type===miCurrentFilter);
   if(filtered.length===0){if(empty)empty.style.display='block';list.style.display='none';return;}
   if(empty)empty.style.display='none';list.style.display='block';
-  list.innerHTML=filtered.slice(0,50).map(item=>`<div class="mi-feed-item" onclick="switchPage('analyzer');setTimeout(()=>{const inp=document.getElementById('addressInput');if(inp)inp.value='${(item.addr||'').replace(/'/g,'')}';},100)"><span class="mi-feed-badge ${item.badgeClass}">${item.label}</span><div style="flex:1;min-width:0"><div class="mi-feed-addr">${item.addr||'—'}</div><div class="mi-feed-desc">${item.desc||''}</div><div class="mi-feed-meta">${formatMiDate(item.date)}${item.owner?' · '+item.owner:''}${item.borough?' · '+item.borough:''}</div></div>${item.cost?`<div class="mi-feed-cost">${item.cost}</div>`:''}</div>`).join('');
+  list.innerHTML=filtered.slice(0,50).map(item=>`<div class="mi-feed-item" onclick="switchPage('analyzer');setTimeout(()=>{inp=document.getElementById('addressInput');if(inp)inp.value='${(item.addr||'').replace(/'/g,'')}';},100)"><span class="mi-feed-badge ${item.badgeClass}">${item.label}</span><div style="flex:1;min-width:0"><div class="mi-feed-addr">${item.addr||'—'}</div><div class="mi-feed-desc">${item.desc||''}</div><div class="mi-feed-meta">${formatMiDate(item.date)}${item.owner?' · '+item.owner:''}${item.borough?' · '+item.borough:''}</div></div>${item.cost?`<div class="mi-feed-cost">${item.cost}</div>`:''}</div>`).join('');
 }
 
 // ── BBL LOOKUP ────────────────────────────────────────────────
@@ -10504,8 +10504,8 @@ async function lookupBBL(){
   if(statusEl)statusEl.innerHTML=`<span style="color:var(--navy)">Looking up BBL ${bbl}…</span>`;
   try{
     const bblNum=parseInt(bbl);
-    const url=`https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query?where=BBL=${bblNum}&outFields=ZoneDist1,Address,LandUse,BldgClass,LotArea,YearBuilt,UnitsRes,UnitsTotal,OwnerName,LotFront,LotDepth,NumFloors,BuiltFAR,MaxAllwFAR&f=json&returnGeometry=true`;
-    const res=await fetch(url);const data=await res.json();
+    url=`https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query?where=BBL=${bblNum}&outFields=ZoneDist1,Address,LandUse,BldgClass,LotArea,YearBuilt,UnitsRes,UnitsTotal,OwnerName,LotFront,LotDepth,NumFloors,BuiltFAR,MaxAllwFAR&f=json&returnGeometry=true`;
+    res=await fetch(url);data=await res.json();
     if(!data.features||data.features.length===0){if(statusEl)statusEl.innerHTML=`<span style="color:var(--red)">No parcel found for BBL ${bbl}.</span>`;return;}
     const feat=data.features[0].attributes;
     const boroughNames={'1':'Manhattan','2':'Bronx','3':'Brooklyn','4':'Queens','5':'Staten Island'};
@@ -10650,14 +10650,14 @@ function getZoningInfo(rawCode) {
   let cleaned = rawCode.toString().trim();
   cleaned = cleaned.replace(/^NYC\s*[\u00B7\u2022\u2013\u2014\-]\s*/i, '');
   cleaned = cleaned.split(/\s*[\u00B7\u2022\u2013\u2014]\s*/)[0];
-  const code = cleaned.trim().toUpperCase().replace(/\s+/g,'');
+  code = cleaned.trim().toUpperCase().replace(/\s+/g,'');
   // Direct match
   if (NYC_ZONING_DB[code]) return { code, ...NYC_ZONING_DB[code] };
   // Try prefix match (e.g. "C5-3" from "C5-3(LH-1)")
   const prefix = code.split('(')[0].split('/')[0];
   if (NYC_ZONING_DB[prefix]) return { code: prefix, ...NYC_ZONING_DB[prefix] };
   // Fuzzy: find closest key
-  const keys = Object.keys(NYC_ZONING_DB);
+  keys = Object.keys(NYC_ZONING_DB);
   const match = keys.find(k => code.startsWith(k) || k.startsWith(code.slice(0,3)));
   if (match) return { code: match, ...NYC_ZONING_DB[match] };
   return null;
@@ -10816,7 +10816,7 @@ function calcDOBFees() {
     fees.push({ name: 'Site Safety Registration', amount: 3150, note: 'Required for jobs ≥$1M (annual)' });
   }
 
-  const total = fees.reduce((s, f) => s + f.amount, 0);
+  total = fees.reduce((s, f) => s + f.amount, 0);
   const fmt = n => n >= 1000 ? '$' + Math.round(n/1000) + 'K' : '$' + n.toLocaleString();
 
   const rowsEl = document.getElementById('feeCalcRows');
@@ -10865,7 +10865,7 @@ async function checkViolations() {
       return;
     }
 
-    let html = open.length
+    html = open.length
       ? '<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:10px"><div style="font-weight:700;color:#dc2626;margin-bottom:8px">' + open.length + ' Open Violation' + (open.length>1?'s':'') + '</div>'
         + open.map(v => '<div style="background:white;border-radius:6px;padding:9px 12px;margin-bottom:6px"><div style="font-weight:700;font-size:var(--text-sm);color:#dc2626;font-family:var(--mono)">' + v._src + (v.violation_number||v.ecb_violation_number?' #'+(v.violation_number||v.ecb_violation_number):'') + '</div><div style="font-size:var(--text-sm);color:#7f1d1d">' + (v.description||v.violation_description||'Violation on record') + '</div></div>').join('')
         + '</div>'
@@ -10899,9 +10899,9 @@ async function fetchTimelineTool() {
     'DM':{'1':89,'2':68,'3':76,'4':72,'5':55},
   };
 
-  let data = null;
+  data = null;
   try {
-    const url = 'https://data.cityofnewyork.us/resource/ipu4-2q9a.json?job_type=' + jobType + '&borough=' + encodeURIComponent(boroughNames[borough].toUpperCase()) + '&$limit=500&$order=issuance_date DESC&$select=filing_date,issuance_date,job_type';
+    url = 'https://data.cityofnewyork.us/resource/ipu4-2q9a.json?job_type=' + jobType + '&borough=' + encodeURIComponent(boroughNames[borough].toUpperCase()) + '&$limit=500&$order=issuance_date DESC&$select=filing_date,issuance_date,job_type';
     const raw = await proxyFetch(url);
     if (Array.isArray(raw) && raw.length >= 10) {
       const days = raw.filter(p => p.filing_date && p.issuance_date)
@@ -10945,7 +10945,7 @@ document.addEventListener('DOMContentLoaded', function() { if(document.getElemen
 // Restore demo session on load
 (function() {
   try {
-    const s = localStorage.getItem('ts_session');
+    s = localStorage.getItem('ts_session');
     if (s) {
       const user = JSON.parse(s);
       window._authUser = user;
