@@ -5904,11 +5904,12 @@ const DOB_LICENSE_DISPLAY = {
 async function fetchDOBLicensees(licenseType) {
   try {
     const today = new Date().toISOString().slice(0, 10);
+    // Query DOB license registry - filter by type and active status only
+    // No $order to avoid potential 400s on this dataset
     const url = 'https://data.cityofnewyork.us/resource/t8hj-ruu2.json'
       + '?license_type=' + encodeURIComponent(licenseType)
       + '&$where=expiration_date%20%3E%20%27' + today + '%27'
-      + '&$limit=6'
-      + '&$order=expiration_date%20DESC';
+      + '&$limit=6';
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) return [];
     const data = await res.json();
