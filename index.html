@@ -5593,13 +5593,8 @@ async function fetchNYCDobData(address) {
 
   try {
     // Fetch from DOB NOW active permits (rbx6-tga4) and historical (ipu4-2q9a) in parallel
-    // Remove $order from all queries to avoid 400 errors on NYC Open Data
-    // Sort results client-side instead
-    const [nowRes, histRes, violRes, ecbRes] = await Promise.allSettled([
-      fetch(
-        `https://data.cityofnewyork.us/resource/rbx6-tga4.json?house__=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20`,
-        { headers: { 'Accept': 'application/json' } }
-      ),
+    // Two reliable datasets: historical permits (ipu4-2q9a) + DOB violations (3h2n-5cm9)
+    const [histRes, violRes] = await Promise.allSettled([
       fetch(
         `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?house__=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20`,
         { headers: { 'Accept': 'application/json' } }
@@ -5607,12 +5602,10 @@ async function fetchNYCDobData(address) {
       fetch(
         `https://data.cityofnewyork.us/resource/3h2n-5cm9.json?house_number=${encodeURIComponent(houseNo)}&street=${encodeURIComponent(street)}&$limit=20`,
         { headers: { 'Accept': 'application/json' } }
-      ),
-      fetch(
-        `https://data.cityofnewyork.us/resource/6bgk-3dad.json?house_number=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20`,
-        { headers: { 'Accept': 'application/json' } }
       )
     ]);
+    const nowRes = { status: 'fulfilled', value: { ok: false } };
+    const ecbRes = { status: 'fulfilled', value: { ok: false } };
 
     let activePermits = [];
     let historicalPermits = [];
