@@ -5563,23 +5563,26 @@ async function fetchRealZoning(lat, lng) {
 window._nycDobData = null;
 
 function parseNYCAddress(address) {
-  // Extract house number and street from address string
+  // Extract house number and street from NYC address
   // e.g. "550 Madison Ave, New York NY" -> { houseNo: '550', street: 'MADISON AVE' }
-  const match = address.match(/^(\d[\d-]*)\s+(.+?)(?:,|\s+New York|\s+NYC|\s+NY)/i);
+  const match = address.match(/^(\d[\d-]*)\s+(.+?)(?:,|\s+New York|\s+NYC|\s+NY|\s+Brooklyn|\s+Queens|\s+Bronx|\s+Staten Island)/i);
   if (!match) return null;
   const houseNo = match[1];
   const street = match[2].toUpperCase()
-    .replace(/AVENUE/g, 'AVE')
-    .replace(/STREET/g, 'ST')
-    .replace(/BOULEVARD/g, 'BLVD')
-    .replace(/ROAD/g, 'RD')
-    .replace(/DRIVE/g, 'DR')
-    .replace(/PLACE/g, 'PL')
-    .replace(/COURT/g, 'CT')
-    .replace(/LANE/g, 'LN')
+    .replace(/\bAVENUE\b/g, 'AVE')
+    .replace(/\bSTREET\b/g, 'ST')
+    .replace(/\bBOULEVARD\b/g, 'BLVD')
+    .replace(/\bROAD\b/g, 'RD')
+    .replace(/\bDRIVE\b/g, 'DR')
+    .replace(/\bPLACE\b/g, 'PL')
+    .replace(/\bCOURT\b/g, 'CT')
+    .replace(/\bLANE\b/g, 'LN')
+    .replace(/\bPLAZA\b/g, 'PLZ')
     .trim();
   return { houseNo, street };
 }
+
+
 
 async function fetchNYCDobData(address) {
   window._nycDobData = null;
@@ -5602,7 +5605,7 @@ async function fetchNYCDobData(address) {
         { headers: { 'Accept': 'application/json' } }
       ),
       fetch(
-        `https://data.cityofnewyork.us/resource/3h2n-5cm9.json?house_number=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20`,
+        `https://data.cityofnewyork.us/resource/3h2n-5cm9.json?house_number=${encodeURIComponent(houseNo)}&street=${encodeURIComponent(street)}&$limit=20`,
         { headers: { 'Accept': 'application/json' } }
       ),
       fetch(
