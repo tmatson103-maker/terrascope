@@ -3915,7 +3915,7 @@ function renderComparableData() {
     + boroughRows
     + '<div style="padding:14px 20px;background:var(--navy-tint);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">'
     + '<span style="font-size:14px;flex-shrink:0">&#128161;</span>'
-    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + ' <span style="color:var(--text3)">Data sourced from NYC DOB permit issuance records.</span></div>'
+    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + ' <span style="color:var(--text3)">Ranges are estimates based on historical NYC DOB permit issuance data and vary significantly by job cost and scope. <a href=\"https://www1.nyc.gov/site/buildings/industry/fee-calculator.page\" target=\"_blank\" style=\"color:var(--gold);font-weight:600;text-decoration:none\">Use the NYC DOB Fee Calculator for exact fees &#8599;</a></span></div>'
     + '</div>'
     + '<div style="padding:8px 20px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">'
     + Object.keys(COMPARABLE_DATA).filter(function(t) { return t !== projectType; }).slice(0,4).map(function(t) {
@@ -3961,7 +3961,7 @@ function renderComparableForType(type) {
     + boroughRows
     + '<div style="padding:14px 20px;background:var(--navy-tint);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">'
     + '<span style="font-size:14px;flex-shrink:0">&#128161;</span>'
-    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + '</div>'
+    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + ' <span style="color:var(--text3)">Ranges are estimates based on historical NYC DOB data. <a href=\"https://www1.nyc.gov/site/buildings/industry/fee-calculator.page\" target=\"_blank\" style=\"color:var(--gold);font-weight:600;text-decoration:none\">Use the NYC DOB Fee Calculator for exact fees &#8599;</a></span></div>'
     + '</div>'
     + '<div style="padding:8px 20px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">'
     + Object.keys(COMPARABLE_DATA).filter(function(t) { return t !== type; }).slice(0,4).map(function(t) {
