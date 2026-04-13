@@ -5903,17 +5903,21 @@ const DOB_LICENSE_DISPLAY = {
 
 async function fetchDOBLicensees(licenseType) {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    // Query DOB license registry - filter by type and active status only
-    // No $order to avoid potential 400s on this dataset
+    // Query by license type only - filter for active licenses client-side
+    // Avoids $where issues with field name variations across dataset versions
     const url = 'https://data.cityofnewyork.us/resource/t8hj-ruu2.json'
       + '?license_type=' + encodeURIComponent(licenseType)
-      + '&$where=expiration_date%20%3E%20%27' + today + '%27'
-      + '&$limit=6';
+      + '&$limit=50';
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+    const today = new Date();
+    // Filter to only currently active licenses client-side
+    return data.filter(function(lic) {
+      if (!lic.expiration_date) return true; // include if no expiry date
+      return new Date(lic.expiration_date) > today;
+    }).slice(0, 6);
   } catch(e) {
     console.warn('[Terrascope] DOB license fetch failed:', e.message);
     return [];
