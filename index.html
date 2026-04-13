@@ -5880,397 +5880,171 @@ function applyLiveGeoData(geoData) {
 
 // CONTRACTOR DIRECTORY 
 const CONTRACTOR_TYPES = {
- 'Commercial New Build':['General Contractor','Structural Engineer','MEP Engineer','Civil Engineer'],
- 'Residential Addition':['General Contractor','Framing Contractor','Electrician'],
- 'Mixed-Use Development':['General Contractor','Structural Engineer','Civil Engineer','Environmental Consultant'],
- 'Industrial Warehouse':['General Contractor','Structural Engineer','MEP Engineer'],
- 'Restaurant / Food Service':['General Contractor','Commercial Kitchen Specialist','Fire Suppression Contractor','HVAC Contractor'],
- 'Historic Renovation':['Historic Preservation Contractor','Structural Engineer','Environmental Consultant'],
- 'Retail Store':['General Contractor','Electrician','ADA Compliance Specialist'],
- 'Office Space':['General Contractor','Electrician','HVAC Contractor'],
- 'Parking Lot / Garage':['Civil Engineer','Paving Contractor','Lighting Electrician'],
- 'Solar / Energy':['Solar Installer','Electrician','Structural Engineer'],
- 'Pool or Deck':['Pool Contractor','Electrician','Fencing Contractor'],
- 'Demolition':['Demolition Contractor','Environmental Consultant','Hauling & Disposal'],
- 'Cell Tower / Antenna':['Telecom Contractor','Structural Engineer','RF Engineer'],
- 'Hotel / Short-Term Rental':['General Contractor','Fire Safety Engineer','Interior Designer'],
- 'Medical or Dental Office':['Medical Construction Specialist','Plumber','Electrician','X-Ray Shielding Contractor'],
+  'Commercial New Build':      ['General Contractor','Electrician','Plumber','HVAC Contractor','Fire Suppression Contractor'],
+  'Residential Addition':      ['General Contractor','Electrician','Plumber'],
+  'Mixed Use':                 ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
+  'Home Addition':             ['General Contractor','Electrician','Plumber'],
+  'Renovation':                ['General Contractor','Electrician','Plumber'],
+  'Restaurant':                ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
+  'Retail Store':              ['General Contractor','Electrician'],
+  'Office Space':              ['General Contractor','Electrician','HVAC Contractor'],
+  'Demolition':                ['General Contractor'],
+  'New Building':              ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
+  'default':                   ['General Contractor','Electrician','Plumber'],
 };
-const CONTRACTOR_SEED = [
- {name:'Summit Build Group',rating:4.9,reviews:147,phone:'(555) 210-4400',bg:'#1B2B4B'},
- {name:'Apex Structural Solutions',rating:4.8,reviews:89,phone:'(555) 330-7721',bg:'#059669'},
- {name:'Precision MEP Services',rating:4.7,reviews:203,phone:'(555) 441-8832',bg:'#2563EB'},
- {name:'ClearPath Civil Engineering',rating:4.9,reviews:64,phone:'(555) 552-9943',bg:'#D97706'},
- {name:'BlueLine Electric Co.',rating:4.8,reviews:312,phone:'(555) 663-0054',bg:'#2563EB'},
- {name:'Heritage Restoration LLC',rating:5.0,reviews:41,phone:'(555) 774-1165',bg:'#C8922A'},
- {name:'EcoSite Environmental',rating:4.6,reviews:78,phone:'(555) 885-2276',bg:'#059669'},
- {name:'FireGuard Systems',rating:4.9,reviews:156,phone:'(555) 996-3387',bg:'#DC2626'},
-];
-const CONTRACTOR_EMOJIS = {'General Contractor':'','Structural Engineer':'','MEP Engineer':'','Civil Engineer':'','Electrician':'','Plumber':'','HVAC Contractor':'','Environmental Consultant':'','Fire Suppression Contractor':'','Solar Installer':'','Pool Contractor':'','Demolition Contractor':'','Telecom Contractor':'','Medical Construction Specialist':'','Historic Preservation Contractor':'','Commercial Kitchen Specialist':'','ADA Compliance Specialist':'','Fencing Contractor':'','Lighting Electrician':'','Paving Contractor':'','RF Engineer':'','Fire Safety Engineer':'','Interior Designer':'','X-Ray Shielding Contractor':'','Framing Contractor':'','Hauling & Disposal':''};
 
-function buildContractorDirectory(projectType, geoData) {
+// NYC DOB license type codes mapped to contractor types
+// Source: NYC DOB License Info dataset (t8hj-ruu2)
+const DOB_LICENSE_CODES = {
+  'General Contractor':          'GC',
+  'Electrician':                 'EL',
+  'Plumber':                     'MP',
+  'HVAC Contractor':             'LB',
+  'Fire Suppression Contractor': 'FS',
+  'Master Plumber':              'MP',
+  'Master Electrician':          'ME',
+};
+
+// Borough name to DOB borough code
+const BOROUGH_CODES = {
+  'Manhattan':    'MANHATTAN',
+  'Brooklyn':     'BROOKLYN',
+  'Queens':       'QUEENS',
+  'Bronx':        'BRONX',
+  'Staten Island':'STATEN ISLAND',
+};
+
+function detectBoroughFromAddress(address) {
+  if (!address) return 'MANHATTAN';
+  const a = address.toLowerCase();
+  if (a.includes('brooklyn') || a.includes('bk')) return 'BROOKLYN';
+  if (a.includes('queens') || a.includes('flushing') || a.includes('jamaica') || a.includes('astoria') || a.includes('forest hills') || a.includes('bayside') || a.includes('jamaica')) return 'QUEENS';
+  if (a.includes('bronx')) return 'BRONX';
+  if (a.includes('staten island')) return 'STATEN ISLAND';
+  return 'MANHATTAN';
+}
+
+async function fetchDOBLicensees(licenseCode, borough) {
+  try {
+    const url = 'https://data.cityofnewyork.us/resource/t8hj-ruu2.json'
+      + '?license_type=' + encodeURIComponent(licenseCode)
+      + '&$where=expiration_date>%27' + new Date().toISOString().slice(0,10) + '%27'
+      + '&$limit=8'
+      + '&$order=expiration_date DESC';
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+async function buildContractorDirectory(projectType, geoData) {
   const container = document.getElementById('contractorList');
   if (!container) return;
-  const types = CONTRACTOR_TYPES[projectType] || CONTRACTOR_TYPES['Commercial New Build'];
-  const city = geoData?.address?.city || geoData?.address?.town || geoData?.address?.village || '';
-  const state = geoData?.address?.state || '';
-  const stateCode = geoData?.address?.state_code || state.slice(0,2).toUpperCase() || '';
-  const locationStr = city ? `${city}${state ? ', ' + state : ''}` : (currentAddress || 'your area');
 
-  // Use the actual searched address for the most precise Maps search
-  const nearLocation = currentAddress || locationStr;
+  const borough = detectBoroughFromAddress(currentAddress);
+  const types = CONTRACTOR_TYPES[projectType] || CONTRACTOR_TYPES['default'];
 
-  // Build search links per contractor type
-  const searchLinks = types.map(type => {
-    const q = encodeURIComponent(`${type} near ${nearLocation}`);
-    const gmapsUrl = `https://www.google.com/maps/search/${q}`;
-    const yelpUrl = `https://www.yelp.com/search?find_desc=${encodeURIComponent(type)}&find_loc=${encodeURIComponent(nearLocation)}`;
-    return { type, gmapsUrl, yelpUrl };
+  // Show loading state
+  container.innerHTML = '<div style="padding:32px;text-align:center">'
+    + '<div class="spinner" style="margin:0 auto 12px"></div>'
+    + '<div style="font-size:var(--text-base);color:var(--text3)">Loading verified NYC DOB licensed contractors...</div>'
+    + '</div>';
+
+  // Fetch licenses for each contractor type in parallel
+  const results = await Promise.allSettled(
+    types.map(function(type) {
+      const code = DOB_LICENSE_CODES[type];
+      return code ? fetchDOBLicensees(code, borough) : Promise.resolve([]);
+    })
+  );
+
+  const sections = types.map(function(type, i) {
+    const licensees = results[i].status === 'fulfilled' ? results[i].value : [];
+    return { type: type, licensees: licensees };
   });
 
-  // State license board lookup URL
-  const licenseUrl = stateCode
-    ? `https://www.google.com/search?q=${encodeURIComponent(stateCode + ' state contractor license board lookup')}`
-    : 'https://www.google.com/search?q=state+contractor+license+board+lookup';
+  const hasAnyResults = sections.some(function(s) { return s.licensees.length > 0; });
 
-  container.innerHTML = `
-    <div style="padding:16px">
-      <!-- Header -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:var(--text-base);font-weight:700;color:var(--navy);margin-bottom:4px">Find licensed contractors for <strong>${projectType}</strong> near ${locationStr}</div>
-        <div style="font-size:var(--text-sm);color:var(--text3);line-height:1.5">Use the links below to find and verify real local specialists. Always check their license status before hiring.</div>
-      </div>
+  container.innerHTML = '<div style="padding:16px">'
 
-      <!-- Contractor type search links -->
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-        ${searchLinks.map(({ type, gmapsUrl, yelpUrl }) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md)">
-            <span style="font-size:var(--text-base);font-weight:600;color:var(--text)">${type}</span>
-            <div style="display:flex;gap:6px">
-              <a href="${gmapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 11px;background:white;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;color:var(--navy);text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Google Maps ↗</a>
-              <a href="${yelpUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 11px;background:white;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;color:#d32323;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='#d32323'" onmouseout="this.style.borderColor='var(--border2)'">Yelp ↗</a>
-            </div>
-          </div>`).join('')}
-      </div>
-
-      <!-- License verification callout -->
-      <div style="background:var(--amber-pale);border:1px solid var(--amber-border);border-radius:var(--radius-md);padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
-        <span style="font-size:15px;flex-shrink:0">&#9888;</span>
-        <div>
-          <div style="font-size:var(--text-base);font-weight:700;color:#92400E;margin-bottom:3px">Always verify licenses before hiring</div>
-          <div style="font-size:var(--text-sm);color:#92400E;line-height:1.5">Check that any contractor you hire is licensed and insured in ${state || 'your state'}. Unlicensed work can void permits and create liability.</div>
-          <a href="${licenseUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:var(--text-sm);font-weight:700;color:var(--amber);text-decoration:none">${stateCode || 'State'} Contractor License Board &#8599;</a>
-        </div>
-      </div>
-    </div>`;
-}
-
-// CODE CHANGE ALERTS 
-// Static fallback alerts used when live fetch hasn't completed yet
-const CODE_ALERTS = [
-  { id:'f1', source:'NYC DOB', title:'Local Law 97 Carbon Emissions Caps — Active', desc:'Buildings over 25,000 sq ft face carbon emissions limits starting 2024. Non-compliance fines begin at $268/ton of excess CO₂. Retrofits required.', date:'Active now', link:'https://www1.nyc.gov/site/buildings/codes/local-law-97.page', tag:'at-new', tagLabel:'Active Law', iconClass:'ai-red', icon:'🚨' },
-  { id:'f2', source:'NYC DOB', title:'Local Law 126 — Parking Structure Inspections', desc:'Parking structures must be inspected every 6 years by a licensed engineer. Deadlines vary by borough — check DOB for your property.', date:'Active now', link:'https://www1.nyc.gov/site/buildings/codes/local-law-126-of-2021.page', tag:'at-update', tagLabel:'Inspection Required', iconClass:'ai-amber2', icon:'⚠' },
-  { id:'f3', source:'NYC DCP', title:'City of Yes for Housing — Adopted Dec 2024', desc:'Major zoning text amendment allowing ADUs, transit-oriented development, and increased density citywide. Review your zone for new development options.', date:'Dec 2024', link:'https://www.nyc.gov/site/planning/plans/city-of-yes/city-of-yes-for-housing.page', tag:'at-new', tagLabel:'New Rule', iconClass:'ai-blue', icon:'ℹ' },
-  { id:'f4', source:'NYC DOB', title:'DOB NOW: Build — All Filings Now Required Online', desc:'All permit applications including ALT-2 and ALT-3 must be filed through DOB NOW: Build. Paper filings no longer accepted at borough offices.', date:'In effect', link:'https://www1.nyc.gov/site/buildings/industry/dob-now-build.page', tag:'at-update', tagLabel:'Process Change', iconClass:'ai-blue', icon:'ℹ' },
-  { id:'f5', source:'NYC DOB', title:'Local Law 196 — Site Safety Training Mandatory', desc:'All workers on major construction sites must complete 40-hour SST training. Supervisors require 62 hours. Stop-work orders for non-compliance.', date:'Fully in effect', link:'https://www1.nyc.gov/site/buildings/industry/site-safety-training.page', tag:'at-new', tagLabel:'Mandatory', iconClass:'ai-red', icon:'🚨' },
-];
-let dismissedAlerts = new Set();
-let _liveAlerts = null;
-
-async function fetchLiveAlerts() {
-  try {
-    const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/alerts');
-    const data = await res.json();
-    if (data?.alerts?.length) {
-      _liveAlerts = data.alerts;
-      renderAlerts();
-    }
-  } catch(e) {
-    // Use fallback static alerts if fetch fails
-  }
-}
-
-// ── PORTFOLIO HEALTH SUMMARY ──────────────────────────────
-function renderPortfolioHealth() {
-  const banner = document.getElementById('portfolioHealthBanner');
-  const inner = document.getElementById('portfolioHealthInner');
-  if (!banner || !inner || savedProjects.length === 0) {
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-  const total = savedProjects.length;
-  const withViolations = savedProjects.filter(function(p) { return p.violationStatus === 'violations'; }).length;
-  const clear = savedProjects.filter(function(p) { return p.violationStatus === 'clear'; }).length;
-  const approved = savedProjects.filter(function(p) { return p.status === 'approved'; }).length;
-  const inReview = savedProjects.filter(function(p) { return p.status === 'pending'; }).length;
-  const active = savedProjects.filter(function(p) { return p.status === 'active'; }).length;
-  let health = Math.max(0, Math.min(100, 100 - (withViolations * 20)));
-  const healthColor = health >= 80 ? '#059669' : health >= 50 ? '#d97706' : '#dc2626';
-  const healthLabel = health >= 80 ? 'Good' : health >= 50 ? 'Needs Attention' : 'Action Required';
-  const healthIcon = health >= 80 ? '&#10003;' : health >= 50 ? '&#9888;' : '&#10007;';
-  const insights = [];
-  if (withViolations > 0) insights.push('<span style="color:#dc2626;font-weight:600">&#9888; ' + withViolations + ' project' + (withViolations > 1 ? 's have' : ' has') + ' open violations &mdash; resolve before filing new permits</span>');
-  if (approved > 0) insights.push('<span style="color:#059669">&#10003; ' + approved + ' project' + (approved > 1 ? 's' : '') + ' approved and complete</span>');
-  if (inReview > 0) insights.push('<span style="color:#d97706">&#9203; ' + inReview + ' permit' + (inReview > 1 ? 's' : '') + ' currently in review</span>');
-  if (clear > 0 && withViolations === 0) insights.push('<span style="color:#059669">&#10003; All ' + clear + ' tracked project' + (clear > 1 ? 's are' : ' is') + ' violation-free</span>');
-  inner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">'
-    + '<div style="display:flex;align-items:center;gap:14px">'
-    + '<div style="width:48px;height:48px;border-radius:50%;background:' + healthColor + '18;border:2px solid ' + healthColor + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:' + healthColor + '">' + healthIcon + '</div>'
-    + '<div><div style="font-weight:800;font-size:var(--text-md);color:var(--navy)">Portfolio Health: ' + healthLabel + '</div>'
-    + '<div style="font-size:var(--text-sm);color:var(--text3);margin-top:2px">' + total + ' project' + (total > 1 ? 's' : '') + ' &middot; ' + active + ' active &middot; ' + inReview + ' in review &middot; ' + approved + ' approved</div></div></div>'
-    + '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">' + insights.map(function(i) { return '<div style="font-size:var(--text-sm)">' + i + '</div>'; }).join('') + '</div></div>';
-  banner.style.display = 'block';
-}
-
-// ── COMPARABLE PERMIT COST DATA ──────────────────────────────
-// Shows median fees and timelines for similar permit types in NYC
-// Data sourced from NYC DOB Open Data historical permit issuances
-
-const COMPARABLE_DATA = {
-  'New Building': {
-    boroughs: {
-      'Manhattan':  { medianFee: 18500, medianDays: 312, range: '180-540 days', feeRange: '$12k-$28k' },
-      'Brooklyn':   { medianFee: 11200, medianDays: 248, range: '120-420 days', feeRange: '$7k-$18k' },
-      'Queens':     { medianFee: 9800,  medianDays: 220, range: '90-380 days',  feeRange: '$6k-$16k' },
-      'Bronx':      { medianFee: 8400,  medianDays: 195, range: '90-340 days',  feeRange: '$5k-$14k' },
-      'Staten Island': { medianFee: 7200, medianDays: 175, range: '60-300 days', feeRange: '$4k-$12k' }
-    },
-    label: 'New Building (NB)',
-    insight: 'New building applications in NYC take an average of 8-10 months. Manhattan projects run 25% longer due to higher plan exam volume.'
-  },
-  'Commercial New Build': {
-    boroughs: {
-      'Manhattan':  { medianFee: 22000, medianDays: 340, range: '210-600 days', feeRange: '$15k-$35k' },
-      'Brooklyn':   { medianFee: 14500, medianDays: 275, range: '150-480 days', feeRange: '$9k-$22k' },
-      'Queens':     { medianFee: 12000, medianDays: 245, range: '120-420 days', feeRange: '$8k-$20k' },
-      'Bronx':      { medianFee: 10200, medianDays: 215, range: '100-360 days', feeRange: '$6k-$16k' },
-      'Staten Island': { medianFee: 8800, medianDays: 190, range: '90-320 days', feeRange: '$5k-$14k' }
-    },
-    label: 'Commercial New Build',
-    insight: 'Commercial projects require additional fire safety and MEP reviews. Budget for 2-4 rounds of plan corrections.'
-  },
-  'Home Addition': {
-    boroughs: {
-      'Manhattan':  { medianFee: 4200, medianDays: 120, range: '45-210 days', feeRange: '$2.5k-$8k' },
-      'Brooklyn':   { medianFee: 2800, medianDays: 95,  range: '30-180 days', feeRange: '$1.5k-$5k' },
-      'Queens':     { medianFee: 2400, medianDays: 85,  range: '25-160 days', feeRange: '$1.2k-$4.5k' },
-      'Bronx':      { medianFee: 2100, medianDays: 75,  range: '20-140 days', feeRange: '$1k-$4k' },
-      'Staten Island': { medianFee: 1900, medianDays: 65, range: '15-120 days', feeRange: '$900-$3.5k' }
-    },
-    label: 'Residential Addition (A1/A2)',
-    insight: 'Residential additions are typically faster than new buildings. Self-certification is available for many A2 alterations.'
-  },
-  'Residential Addition': {
-    boroughs: {
-      'Manhattan':  { medianFee: 4200, medianDays: 120, range: '45-210 days', feeRange: '$2.5k-$8k' },
-      'Brooklyn':   { medianFee: 2800, medianDays: 95,  range: '30-180 days', feeRange: '$1.5k-$5k' },
-      'Queens':     { medianFee: 2400, medianDays: 85,  range: '25-160 days', feeRange: '$1.2k-$4.5k' },
-      'Bronx':      { medianFee: 2100, medianDays: 75,  range: '20-140 days', feeRange: '$1k-$4k' },
-      'Staten Island': { medianFee: 1900, medianDays: 65, range: '15-120 days', feeRange: '$900-$3.5k' }
-    },
-    label: 'Residential Addition (A1/A2)',
-    insight: 'Residential additions are typically faster than new buildings. Self-certification is available for many A2 alterations.'
-  },
-  'Renovation': {
-    boroughs: {
-      'Manhattan':  { medianFee: 3100, medianDays: 90,  range: '30-180 days', feeRange: '$1.8k-$6k' },
-      'Brooklyn':   { medianFee: 2000, medianDays: 70,  range: '20-150 days', feeRange: '$1.1k-$4k' },
-      'Queens':     { medianFee: 1800, medianDays: 62,  range: '18-130 days', feeRange: '$1k-$3.5k' },
-      'Bronx':      { medianFee: 1600, medianDays: 55,  range: '15-110 days', feeRange: '$850-$3k' },
-      'Staten Island': { medianFee: 1400, medianDays: 48, range: '12-95 days', feeRange: '$750-$2.5k' }
-    },
-    label: 'Renovation / Alteration (A2/A3)',
-    insight: 'Minor alterations (A3) can often be self-certified. A2 alterations involving structural work require a PE stamp.'
-  },
-  'Mixed Use': {
-    boroughs: {
-      'Manhattan':  { medianFee: 19000, medianDays: 328, range: '200-560 days', feeRange: '$13k-$30k' },
-      'Brooklyn':   { medianFee: 13000, medianDays: 265, range: '140-460 days', feeRange: '$8k-$20k' },
-      'Queens':     { medianFee: 11000, medianDays: 238, range: '110-400 days', feeRange: '$7k-$18k' },
-      'Bronx':      { medianFee: 9500,  medianDays: 208, range: '95-350 days',  feeRange: '$6k-$15k' },
-      'Staten Island': { medianFee: 8000, medianDays: 182, range: '85-300 days', feeRange: '$5k-$13k' }
-    },
-    label: 'Mixed-Use Development',
-    insight: 'Mixed-use buildings require coordination between residential and commercial permit tracks. Allow extra time for dual-use zoning review.'
-  }
-};
-
-function detectBorough(address) {
-  const addr = address.toLowerCase();
-  if (addr.includes('manhattan') || addr.includes('new york, ny') || addr.includes(' ny,') || addr.includes('nyc')) {
-    if (addr.includes('brooklyn') || addr.includes('bk')) return 'Brooklyn';
-    if (addr.includes('queens') || addr.includes('flushing') || addr.includes('jamaica') || addr.includes('astoria') || addr.includes('forest hills')) return 'Queens';
-    if (addr.includes('bronx')) return 'Bronx';
-    if (addr.includes('staten island') || addr.includes('staten isl')) return 'Staten Island';
-    return 'Manhattan';
-  }
-  if (addr.includes('brooklyn')) return 'Brooklyn';
-  if (addr.includes('queens') || addr.includes('flushing') || addr.includes('jamaica') || addr.includes('astoria')) return 'Queens';
-  if (addr.includes('bronx')) return 'Bronx';
-  if (addr.includes('staten island')) return 'Staten Island';
-  return 'Manhattan'; // default NYC
-}
-
-function renderComparableData() {
-  const container = document.getElementById('comparableDataInner');
-  if (!container) return;
-
-  if (!savedProjects.length) {
-    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:var(--text-base)">Save a project to see comparable permit costs and timelines for similar jobs in NYC.</div>';
-    return;
-  }
-
-  // Get the most recent project's type to show relevant comparables
-  const recentProject = savedProjects[0];
-  const projectType = recentProject.type;
-  const borough = detectBorough(recentProject.addr);
-  const comp = COMPARABLE_DATA[projectType] || COMPARABLE_DATA['Renovation'];
-  const boroughData = comp.boroughs[borough] || comp.boroughs['Manhattan'];
-
-  // Build borough comparison bars
-  const maxDays = Math.max.apply(null, Object.values(comp.boroughs).map(function(b) { return b.medianDays; }));
-  const maxFee = Math.max.apply(null, Object.values(comp.boroughs).map(function(b) { return b.medianFee; }));
-
-  const boroughRows = Object.keys(comp.boroughs).map(function(boro) {
-    const data = comp.boroughs[boro];
-    const isSelected = boro === borough;
-    const daysPct = Math.round((data.medianDays / maxDays) * 100);
-    const feePct = Math.round((data.medianFee / maxFee) * 100);
-    return '<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:' + (isSelected ? 'var(--navy-tint)' : 'white') + '">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<span style="font-weight:' + (isSelected ? '800' : '600') + ';color:' + (isSelected ? 'var(--navy)' : 'var(--text)') + ';font-size:var(--text-base)">' + boro + (isSelected ? ' <span style="background:var(--navy);color:white;font-size:9px;padding:1px 6px;border-radius:var(--radius-pill);font-family:var(--sans)">YOUR PROJECT</span>' : '') + '</span>'
-      + '<div style="display:flex;gap:20px;text-align:right">'
-      + '<div><div style="font-size:var(--text-sm);font-weight:700;color:var(--navy)">' + data.feeRange + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Median Fees</div></div>'
-      + '<div><div style="font-size:var(--text-sm);font-weight:700;color:var(--navy)">' + data.range + '</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Approval Time</div></div>'
-      + '</div></div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + '<div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Fees</div><div style="height:6px;background:var(--border);border-radius:3px"><div style="height:100%;background:' + (isSelected ? 'var(--gold)' : 'var(--navy-tint2)') + ';border-radius:3px;width:' + feePct + '%"></div></div></div>'
-      + '<div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Timeline</div><div style="height:6px;background:var(--border);border-radius:3px"><div style="height:100%;background:' + (isSelected ? 'var(--gold)' : 'var(--navy-tint2)') + ';border-radius:3px;width:' + daysPct + '%"></div></div></div>'
-      + '</div></div>';
-  }).join('');
-
-  container.innerHTML = '<div style="background:var(--navy);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'
-    + '<div><div style="font-weight:700;font-size:var(--text-base);color:white">' + comp.label + '</div>'
-    + '<div style="font-size:var(--text-sm);color:rgba(255,255,255,.5);margin-top:2px">Based on ' + recentProject.addr.split(',')[0] + '</div></div>'
-    + '<div style="display:flex;gap:20px;text-align:center">'
-    + '<div><div style="font-size:1.1rem;font-weight:800;color:var(--gold)">' + boroughData.feeRange + '</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em">Your Borough Fees</div></div>'
-    + '<div><div style="font-size:1.1rem;font-weight:800;color:var(--gold)">' + boroughData.range + '</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em">Typical Timeline</div></div>'
-    + '</div></div>'
-    + boroughRows
-    + '<div style="padding:14px 20px;background:var(--navy-tint);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">'
-    + '<span style="font-size:14px;flex-shrink:0">&#128161;</span>'
-    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + ' <span style="color:var(--text3)">Ranges are estimates based on historical NYC DOB permit issuance data and vary significantly by job cost and scope. <a href=\"https://www1.nyc.gov/site/buildings/industry/fee-calculator.page\" target=\"_blank\" style=\"color:var(--gold);font-weight:600;text-decoration:none\">Use the NYC DOB Fee Calculator for exact fees &#8599;</a></span></div>'
+    // Header
+    + '<div style="margin-bottom:20px">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+    + '<div style="font-size:var(--text-md);font-weight:800;color:var(--navy)">Licensed Contractors</div>'
+    + '<span style="background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;font-family:var(--mono)">NYC DOB VERIFIED</span>'
     + '</div>'
-    + '<div style="padding:8px 20px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">'
-    + Object.keys(COMPARABLE_DATA).filter(function(t) { return t !== projectType; }).slice(0,4).map(function(t) {
-        return '<button onclick="renderComparableForType(this.dataset.type)" style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:5px 12px;font-size:var(--text-sm);color:var(--text2);cursor:pointer;font-family:var(--sans)">' + t + '</button>';
-      }).join('')
-    + '</div>';
-}
-
-function renderComparableForType(type) {
-  const container = document.getElementById('comparableDataInner');
-  if (!container || !savedProjects.length) return;
-  const recentProject = savedProjects[0];
-  const borough = detectBorough(recentProject.addr);
-  const comp = COMPARABLE_DATA[type] || COMPARABLE_DATA['Renovation'];
-  const boroughData = comp.boroughs[borough] || comp.boroughs['Manhattan'];
-  const maxDays = Math.max.apply(null, Object.values(comp.boroughs).map(function(b) { return b.medianDays; }));
-  const maxFee = Math.max.apply(null, Object.values(comp.boroughs).map(function(b) { return b.medianFee; }));
-
-  const boroughRows = Object.keys(comp.boroughs).map(function(boro) {
-    const data = comp.boroughs[boro];
-    const isSelected = boro === borough;
-    const daysPct = Math.round((data.medianDays / maxDays) * 100);
-    const feePct = Math.round((data.medianFee / maxFee) * 100);
-    return '<div style="padding:12px 20px;border-bottom:1px solid var(--border);background:' + (isSelected ? 'var(--navy-tint)' : 'white') + '">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<span style="font-weight:' + (isSelected ? '800' : '600') + ';color:' + (isSelected ? 'var(--navy)' : 'var(--text)') + ';font-size:var(--text-base)">' + boro + (isSelected ? ' <span style="background:var(--navy);color:white;font-size:9px;padding:1px 6px;border-radius:var(--radius-pill);font-family:var(--sans)">YOUR LOCATION</span>' : '') + '</span>'
-      + '<div style="display:flex;gap:20px;text-align:right">'
-      + '<div><div style="font-size:var(--text-sm);font-weight:700;color:var(--navy)">' + data.feeRange + '</div><div style="font-size:10px;color:var(--text3)">Median Fees</div></div>'
-      + '<div><div style="font-size:var(--text-sm);font-weight:700;color:var(--navy)">' + data.range + '</div><div style="font-size:10px;color:var(--text3)">Timeline</div></div>'
-      + '</div></div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + '<div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Fees</div><div style="height:6px;background:var(--border);border-radius:3px"><div style="height:100%;background:' + (isSelected ? 'var(--gold)' : 'var(--navy-tint2)') + ';border-radius:3px;width:' + feePct + '%"></div></div></div>'
-      + '<div><div style="font-size:10px;color:var(--text3);margin-bottom:3px">Timeline</div><div style="height:6px;background:var(--border);border-radius:3px"><div style="height:100%;background:' + (isSelected ? 'var(--gold)' : 'var(--navy-tint2)') + ';border-radius:3px;width:' + daysPct + '%"></div></div></div>'
-      + '</div></div>';
-  }).join('');
-
-  container.innerHTML = '<div style="background:var(--navy);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">'
-    + '<div><div style="font-weight:700;font-size:var(--text-base);color:white">' + comp.label + '</div><div style="font-size:var(--text-sm);color:rgba(255,255,255,.5);margin-top:2px">' + borough + ' comparison</div></div>'
-    + '<div style="display:flex;gap:20px;text-align:center">'
-    + '<div><div style="font-size:1.1rem;font-weight:800;color:var(--gold)">' + boroughData.feeRange + '</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em">Borough Fees</div></div>'
-    + '<div><div style="font-size:1.1rem;font-weight:800;color:var(--gold)">' + boroughData.range + '</div><div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.06em">Typical Timeline</div></div>'
-    + '</div></div>'
-    + boroughRows
-    + '<div style="padding:14px 20px;background:var(--navy-tint);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">'
-    + '<span style="font-size:14px;flex-shrink:0">&#128161;</span>'
-    + '<div style="font-size:var(--text-sm);color:var(--text2);line-height:1.6">' + comp.insight + ' <span style="color:var(--text3)">Ranges are estimates based on historical NYC DOB data. <a href=\"https://www1.nyc.gov/site/buildings/industry/fee-calculator.page\" target=\"_blank\" style=\"color:var(--gold);font-weight:600;text-decoration:none\">Use the NYC DOB Fee Calculator for exact fees &#8599;</a></span></div>'
+    + '<div style="font-size:var(--text-sm);color:var(--text3)">Active license holders from the NYC DOB License Registry &middot; ' + borough.charAt(0) + borough.slice(1).toLowerCase() + ' area &middot; Verified as of ' + new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + '</div>'
     + '</div>'
-    + '<div style="padding:8px 20px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">'
-    + Object.keys(COMPARABLE_DATA).filter(function(t) { return t !== type; }).slice(0,4).map(function(t) {
-        return '<button onclick="renderComparableForType(this.dataset.type)" style="background:var(--slate);border:1px solid var(--border);border-radius:var(--radius-md);padding:5px 12px;font-size:var(--text-sm);color:var(--text2);cursor:pointer;font-family:var(--sans)">' + t + '</button>';
+
+    // Contractor type sections
+    + sections.map(function(section) {
+        const licCode = DOB_LICENSE_CODES[section.type] || '';
+        const bisSearchUrl = 'https://a810-bisweb.nyc.gov/bisweb/LicenseTypeServlet?vlfirst=Y';
+        const openDataUrl = 'https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2';
+
+        if (section.licensees.length === 0) {
+          return '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
+            + '<div style="background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">'
+            + '<span style="font-weight:700;font-size:var(--text-base);color:white">' + section.type + '</span>'
+            + (licCode ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">License: ' + licCode + '</span>' : '')
+            + '</div>'
+            + '<div style="padding:14px;background:var(--slate)">'
+            + '<div style="font-size:var(--text-sm);color:var(--text3);margin-bottom:10px">Search directly on the NYC DOB license database:</div>'
+            + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+            + '<a href="' + bisSearchUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;text-decoration:none">Search NYC BIS &#8599;</a>'
+            + '<a href="' + openDataUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:white;border:1px solid var(--border);color:var(--navy);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;text-decoration:none">NYC Open Data &#8599;</a>'
+            + '</div></div></div>';
+        }
+
+        const rows = section.licensees.slice(0, 5).map(function(lic) {
+          const name = lic.business_name || ((lic.first_name || '') + ' ' + (lic.last_name || '')).trim() || 'Licensed Contractor';
+          const licNum = lic.license_number || lic.licensee_id || '';
+          const expDate = lic.expiration_date ? new Date(lic.expiration_date) : null;
+          const expStr = expDate ? expDate.toLocaleDateString('en-US', {month:'short', year:'numeric'}) : '';
+          const daysLeft = expDate ? Math.round((expDate - new Date()) / (1000*60*60*24)) : 999;
+          const expColor = daysLeft < 90 ? '#dc2626' : daysLeft < 180 ? '#d97706' : '#059669';
+          const borough_lic = lic.borough || lic.zip_code || '';
+          const licUrl = licNum ? 'https://a810-bisweb.nyc.gov/bisweb/LicenseQueryServlet?requestid=2&licnum=' + licNum : bisSearchUrl;
+
+          return '<div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
+            + '<div style="flex:1;min-width:0">'
+            + '<div style="font-weight:700;font-size:var(--text-base);color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>'
+            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px">'
+            + (licNum ? '<span style="font-family:var(--mono);font-size:var(--text-xs);color:var(--text3);background:var(--slate);padding:1px 6px;border-radius:var(--radius-sm)">Lic #' + licNum + '</span>' : '')
+            + (borough_lic ? '<span style="font-size:var(--text-xs);color:var(--text3)">' + borough_lic + '</span>' : '')
+            + '</div>'
+            + '</div>'
+            + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
+            + (expStr ? '<span style="font-size:var(--text-xs);color:' + expColor + ';font-weight:700">Exp ' + expStr + '</span>' : '')
+            + '<a href="' + licUrl + '" target="_blank" style="font-size:var(--text-xs);color:var(--gold);font-weight:700;text-decoration:none;white-space:nowrap">Verify &#8599;</a>'
+            + '</div></div>';
+        }).join('');
+
+        return '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
+          + '<div style="background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">'
+          + '<span style="font-weight:700;font-size:var(--text-base);color:white">' + section.type + '</span>'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + (licCode ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">License: ' + licCode + '</span>' : '')
+          + '<span style="font-size:var(--text-xs);color:rgba(255,255,255,.5)">' + section.licensees.length + ' active on file</span>'
+          + '</div></div>'
+          + rows
+          + '<div style="padding:8px 14px;background:var(--slate);border-top:1px solid var(--border)">'
+          + '<a href="' + bisSearchUrl + '" target="_blank" style="font-size:var(--text-sm);color:var(--gold);font-weight:600;text-decoration:none">View all ' + section.type + ' licenses on NYC BIS &#8599;</a>'
+          + '</div></div>';
       }).join('')
-    + '</div>';
+
+    // Disclaimer
+    + '<div style="background:var(--amber-pale);border:1px solid var(--amber-border);border-radius:var(--radius-md);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-top:8px">'
+    + '<span style="font-size:15px;flex-shrink:0">&#9888;</span>'
+    + '<div><div style="font-size:var(--text-base);font-weight:700;color:#92400E;margin-bottom:3px">Always verify before hiring</div>'
+    + '<div style="font-size:var(--text-sm);color:#92400E;line-height:1.5">These are active license holders from the NYC DOB registry. Always confirm a contractor\'s current license status, insurance, and references before signing any contract. License status can change. <a href="https://a810-bisweb.nyc.gov/bisweb/LicenseTypeServlet?vlfirst=Y" target="_blank" style="color:#92400E;font-weight:700;text-decoration:underline">Verify on NYC BIS &#8599;</a></div></div>'
+    + '</div></div>';
 }
 
-function renderAlerts() {
-  const container = document.getElementById('alertsList');
-  if (!container) return;
-  const rawAlerts = _liveAlerts || CODE_ALERTS;
 
-  // Normalize both static and live KV alert formats
-  const alerts = rawAlerts.map((a, i) => ({
-    id: a.id || 'alert-' + i,
-    title: a.title || a.headline || 'Code Update',
-    desc: a.desc || a.description || a.summary || '',
-    date: a.date || a.effective_date || a.created || '',
-    link: a.link || a.url || '',
-    iconClass: a.iconClass || 'ai-blue',
-    icon: a.icon || (a.tagLabel === 'New Rule' || a.type === 'New Rule' ? '📋' : a.tagLabel === 'Update' || a.type === 'Update' ? '🔄' : 'ℹ️'),
-    tag: a.tag || 'at-info',
-    tagLabel: a.tagLabel || a.type || a.category || 'Update',
-  }));
-
-  const visible = alerts.filter(a => !dismissedAlerts.has(a.id));
-  const count = visible.length;
-  ['alertCountBadge','alertCountInner'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.textContent = count;
-  });
-
-  if (!count) {
-    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">✓ All caught up — no active alerts.</div>';
-    return;
-  }
-
-  container.innerHTML = visible.map(a => {
-    const tagColor = a.tag === 'at-new' ? '#dc2626' : a.tag === 'at-update' ? '#1d4ed8' : '#d97706';
-    const tagBg = a.tag === 'at-new' ? '#fee2e2' : a.tag === 'at-update' ? '#dbeafe' : '#fef9c3';
-    return '<div class="alert-item" id="alert-' + a.id + '">'
-      + '<div class="alert-icon-wrap ' + (a.iconClass || 'ai-blue') + '">' + (a.icon || 'ℹ️') + '</div>'
-      + '<div class="alert-body" style="min-width:0;flex:1">'
-      + '<div class="alert-title">' + a.title + '</div>'
-      + '<div class="alert-desc">' + a.desc + '</div>'
-      + '<div class="alert-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">'
-      + '<span style="background:' + tagBg + ';color:' + tagColor + ';padding:2px 8px;border-radius:var(--radius-pill);font-size:var(--text-xs);font-weight:700">' + a.tagLabel + '</span>'
-      + '<span class="alert-date">' + a.date + '</span>'
-      + (a.link ? '<a href="' + a.link + '" target="_blank" style="font-size:var(--text-sm);color:var(--gold);text-decoration:none;font-weight:600">Read more ↗</a>' : '')
-      + '</div></div>'
-      + '<button class="alert-action" onclick="dismissAlert(\'' + a.id + '\',event)" style="flex-shrink:0">✕</button>'
-      + '</div>';
-  }).join('');
-}
-
-function dismissAlert(id, e) {
-  e.stopPropagation(); dismissedAlerts.add(id);
-  const el = document.getElementById('alert-'+id);
-  if (el) { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>renderAlerts(),300); }
-}
-function dismissAllAlerts() {
-  const alerts = _liveAlerts || CODE_ALERTS;
-  alerts.forEach(a => dismissedAlerts.add(a.id));
-  renderAlerts();
-}
 
 // FEE ESTIMATOR 
 const FEE_DATA = {
