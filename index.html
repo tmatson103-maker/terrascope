@@ -5880,62 +5880,54 @@ function applyLiveGeoData(geoData) {
 
 // CONTRACTOR DIRECTORY 
 const CONTRACTOR_TYPES = {
-  'Commercial New Build':      ['General Contractor','Electrician','Plumber','HVAC Contractor','Fire Suppression Contractor'],
-  'Residential Addition':      ['General Contractor','Electrician','Plumber'],
-  'Mixed Use':                 ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
-  'Home Addition':             ['General Contractor','Electrician','Plumber'],
-  'Renovation':                ['General Contractor','Electrician','Plumber'],
-  'Restaurant':                ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
-  'Retail Store':              ['General Contractor','Electrician'],
-  'Office Space':              ['General Contractor','Electrician','HVAC Contractor'],
+  'Commercial New Build':      ['General Contractor','Master Electrician','Master Plumber','Master Fire Suppression Piping Contractor'],
+  'Residential Addition':      ['General Contractor','Master Electrician','Master Plumber'],
+  'Mixed Use':                 ['General Contractor','Master Electrician','Master Plumber','Master Fire Suppression Piping Contractor'],
+  'Home Addition':             ['General Contractor','Master Electrician','Master Plumber'],
+  'Renovation':                ['General Contractor','Master Electrician','Master Plumber'],
+  'Restaurant':                ['General Contractor','Master Electrician','Master Plumber','Master Fire Suppression Piping Contractor'],
+  'Retail Store':              ['General Contractor','Master Electrician'],
+  'Office Space':              ['General Contractor','Master Electrician','Oil Burner Equipment Installer'],
   'Demolition':                ['General Contractor'],
-  'New Building':              ['General Contractor','Electrician','Plumber','Fire Suppression Contractor'],
-  'default':                   ['General Contractor','Electrician','Plumber'],
+  'New Building':              ['General Contractor','Master Electrician','Master Plumber','Master Fire Suppression Piping Contractor'],
+  'default':                   ['General Contractor','Master Electrician','Master Plumber'],
 };
 
-// NYC DOB license type codes mapped to contractor types
-// Source: NYC DOB License Info dataset (t8hj-ruu2)
-const DOB_LICENSE_CODES = {
-  'General Contractor':          'GC',
-  'Electrician':                 'EL',
-  'Plumber':                     'MP',
-  'HVAC Contractor':             'LB',
-  'Fire Suppression Contractor': 'FS',
-  'Master Plumber':              'MP',
-  'Master Electrician':          'ME',
-};
-
-// Borough name to DOB borough code
-const BOROUGH_CODES = {
-  'Manhattan':    'MANHATTAN',
-  'Brooklyn':     'BROOKLYN',
-  'Queens':       'QUEENS',
-  'Bronx':        'BRONX',
-  'Staten Island':'STATEN ISLAND',
+// DOB license_type field values exactly as they appear in dataset t8hj-ruu2
+const DOB_LICENSE_DISPLAY = {
+  'General Contractor':                    'GC',
+  'Master Electrician':                    'ME',
+  'Master Plumber':                        'MP',
+  'Master Fire Suppression Piping Contractor': 'FS',
+  'Oil Burner Equipment Installer':        'OB',
 };
 
 function detectBoroughFromAddress(address) {
-  if (!address) return 'MANHATTAN';
+  if (!address) return 'Manhattan';
   const a = address.toLowerCase();
-  if (a.includes('brooklyn') || a.includes('bk')) return 'BROOKLYN';
-  if (a.includes('queens') || a.includes('flushing') || a.includes('jamaica') || a.includes('astoria') || a.includes('forest hills') || a.includes('bayside') || a.includes('jamaica')) return 'QUEENS';
-  if (a.includes('bronx')) return 'BRONX';
-  if (a.includes('staten island')) return 'STATEN ISLAND';
-  return 'MANHATTAN';
+  if (a.includes('brooklyn') || a.includes(' bk ') || a.includes(', bk')) return 'Brooklyn';
+  if (a.includes('queens') || a.includes('flushing') || a.includes('jamaica') || a.includes('astoria') || a.includes('forest hills') || a.includes('bayside') || a.includes('long island city') || a.includes('lic,')) return 'Queens';
+  if (a.includes('bronx')) return 'Bronx';
+  if (a.includes('staten island')) return 'Staten Island';
+  return 'Manhattan';
 }
 
-async function fetchDOBLicensees(licenseCode, borough) {
+async function fetchDOBLicensees(licenseType) {
   try {
-    const url = 'https://data.cityofnewyork.us/resource/t8hj-ruu2.json'
-      + '?license_type=' + encodeURIComponent(licenseCode)
-      + '&$where=expiration_date>%27' + new Date().toISOString().slice(0,10) + '%27'
-      + '&$limit=8'
-      + '&$order=expiration_date DESC';
+    const today = new Date().toISOString().slice(0, 10);
+    const params = new URLSearchParams({
+      license_type: licenseType,
+      '$where': "expiration_date > '" + today + "'",
+      '$limit': '6',
+      '$order': 'expiration_date DESC'
+    });
+    const url = 'https://data.cityofnewyork.us/resource/t8hj-ruu2.json?' + params.toString();
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch(e) {
+    console.warn('[Terrascope] DOB license fetch failed:', e);
     return [];
   }
 }
@@ -5946,80 +5938,68 @@ async function buildContractorDirectory(projectType, geoData) {
 
   const borough = detectBoroughFromAddress(currentAddress);
   const types = CONTRACTOR_TYPES[projectType] || CONTRACTOR_TYPES['default'];
+  const bisUrl = 'https://a810-bisweb.nyc.gov/bisweb/LicenseTypeServlet?vlfirst=Y';
+  const openDataUrl = 'https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2';
 
-  // Show loading state
+  // Loading state
   container.innerHTML = '<div style="padding:32px;text-align:center">'
     + '<div class="spinner" style="margin:0 auto 12px"></div>'
-    + '<div style="font-size:var(--text-base);color:var(--text3)">Loading verified NYC DOB licensed contractors...</div>'
+    + '<div style="font-size:var(--text-base);color:var(--text3)">Loading verified NYC DOB licensed contractors\u2026</div>'
     + '</div>';
 
-  // Fetch licenses for each contractor type in parallel
+  // Fetch all license types in parallel
   const results = await Promise.allSettled(
-    types.map(function(type) {
-      const code = DOB_LICENSE_CODES[type];
-      return code ? fetchDOBLicensees(code, borough) : Promise.resolve([]);
-    })
+    types.map(function(t) { return fetchDOBLicensees(t); })
   );
 
   const sections = types.map(function(type, i) {
-    const licensees = results[i].status === 'fulfilled' ? results[i].value : [];
-    return { type: type, licensees: licensees };
+    return { type: type, licensees: results[i].status === 'fulfilled' ? results[i].value : [] };
   });
 
-  const hasAnyResults = sections.some(function(s) { return s.licensees.length > 0; });
-
   container.innerHTML = '<div style="padding:16px">'
-
-    // Header
     + '<div style="margin-bottom:20px">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
     + '<div style="font-size:var(--text-md);font-weight:800;color:var(--navy)">Licensed Contractors</div>'
     + '<span style="background:var(--green-pale);color:var(--green);border:1px solid var(--green-border);padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;font-family:var(--mono)">NYC DOB VERIFIED</span>'
     + '</div>'
-    + '<div style="font-size:var(--text-sm);color:var(--text3)">Active license holders from the NYC DOB License Registry &middot; ' + borough.charAt(0) + borough.slice(1).toLowerCase() + ' area &middot; Verified as of ' + new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + '</div>'
+    + '<div style="font-size:var(--text-sm);color:var(--text3)">Active NYC DOB license holders \u00b7 ' + borough + ' area \u00b7 Verified ' + new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) + '</div>'
     + '</div>'
-
-    // Contractor type sections
     + sections.map(function(section) {
-        const licCode = DOB_LICENSE_CODES[section.type] || '';
-        const bisSearchUrl = 'https://a810-bisweb.nyc.gov/bisweb/LicenseTypeServlet?vlfirst=Y';
-        const openDataUrl = 'https://data.cityofnewyork.us/Housing-Development/DOB-License-Info/t8hj-ruu2';
+        const code = DOB_LICENSE_DISPLAY[section.type] || '';
 
         if (section.licensees.length === 0) {
           return '<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">'
             + '<div style="background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">'
             + '<span style="font-weight:700;font-size:var(--text-base);color:white">' + section.type + '</span>'
-            + (licCode ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">License: ' + licCode + '</span>' : '')
+            + (code ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">' + code + '</span>' : '')
             + '</div>'
             + '<div style="padding:14px;background:var(--slate)">'
-            + '<div style="font-size:var(--text-sm);color:var(--text3);margin-bottom:10px">Search directly on the NYC DOB license database:</div>'
+            + '<div style="font-size:var(--text-sm);color:var(--text3);margin-bottom:10px">Search the NYC DOB license database directly:</div>'
             + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-            + '<a href="' + bisSearchUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;text-decoration:none">Search NYC BIS &#8599;</a>'
+            + '<a href="' + bisUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:var(--navy);color:white;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;text-decoration:none">Search NYC BIS &#8599;</a>'
             + '<a href="' + openDataUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:7px 12px;background:white;border:1px solid var(--border);color:var(--navy);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;text-decoration:none">NYC Open Data &#8599;</a>'
             + '</div></div></div>';
         }
 
-        const rows = section.licensees.slice(0, 5).map(function(lic) {
-          const name = lic.business_name || ((lic.first_name || '') + ' ' + (lic.last_name || '')).trim() || 'Licensed Contractor';
+        const rows = section.licensees.map(function(lic) {
+          const name = (lic.business_name || ((lic.first_name || '') + ' ' + (lic.last_name || '')).trim() || 'Licensed Contractor').toUpperCase();
           const licNum = lic.license_number || lic.licensee_id || '';
           const expDate = lic.expiration_date ? new Date(lic.expiration_date) : null;
           const expStr = expDate ? expDate.toLocaleDateString('en-US', {month:'short', year:'numeric'}) : '';
           const daysLeft = expDate ? Math.round((expDate - new Date()) / (1000*60*60*24)) : 999;
           const expColor = daysLeft < 90 ? '#dc2626' : daysLeft < 180 ? '#d97706' : '#059669';
-          const borough_lic = lic.borough || lic.zip_code || '';
-          const licUrl = licNum ? 'https://a810-bisweb.nyc.gov/bisweb/LicenseQueryServlet?requestid=2&licnum=' + licNum : bisSearchUrl;
+          const verifyUrl = licNum
+            ? 'https://a810-bisweb.nyc.gov/bisweb/LicenseQueryServlet?requestid=2&licnum=' + encodeURIComponent(licNum)
+            : bisUrl;
 
-          return '<div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px">'
+          return '<div style="padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">'
             + '<div style="flex:1;min-width:0">'
             + '<div style="font-weight:700;font-size:var(--text-base);color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + name + '</div>'
-            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px">'
-            + (licNum ? '<span style="font-family:var(--mono);font-size:var(--text-xs);color:var(--text3);background:var(--slate);padding:1px 6px;border-radius:var(--radius-sm)">Lic #' + licNum + '</span>' : '')
-            + (borough_lic ? '<span style="font-size:var(--text-xs);color:var(--text3)">' + borough_lic + '</span>' : '')
+            + (licNum ? '<div style="font-family:var(--mono);font-size:var(--text-xs);color:var(--text3);margin-top:2px">License #' + licNum + '</div>' : '')
             + '</div>'
-            + '</div>'
-            + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
+            + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">'
             + (expStr ? '<span style="font-size:var(--text-xs);color:' + expColor + ';font-weight:700">Exp ' + expStr + '</span>' : '')
-            + '<a href="' + licUrl + '" target="_blank" style="font-size:var(--text-xs);color:var(--gold);font-weight:700;text-decoration:none;white-space:nowrap">Verify &#8599;</a>'
+            + '<a href="' + verifyUrl + '" target="_blank" style="font-size:var(--text-xs);color:var(--gold);font-weight:700;text-decoration:none">Verify &#8599;</a>'
             + '</div></div>';
         }).join('');
 
@@ -6027,23 +6007,20 @@ async function buildContractorDirectory(projectType, geoData) {
           + '<div style="background:var(--navy);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">'
           + '<span style="font-weight:700;font-size:var(--text-base);color:white">' + section.type + '</span>'
           + '<div style="display:flex;align-items:center;gap:8px">'
-          + (licCode ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">License: ' + licCode + '</span>' : '')
-          + '<span style="font-size:var(--text-xs);color:rgba(255,255,255,.5)">' + section.licensees.length + ' active on file</span>'
+          + (code ? '<span style="font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:var(--radius-pill)">' + code + '</span>' : '')
+          + '<span style="font-size:var(--text-xs);color:rgba(255,255,255,.5)">' + section.licensees.length + ' active</span>'
           + '</div></div>'
           + rows
           + '<div style="padding:8px 14px;background:var(--slate);border-top:1px solid var(--border)">'
-          + '<a href="' + bisSearchUrl + '" target="_blank" style="font-size:var(--text-sm);color:var(--gold);font-weight:600;text-decoration:none">View all ' + section.type + ' licenses on NYC BIS &#8599;</a>'
+          + '<a href="' + bisUrl + '" target="_blank" style="font-size:var(--text-sm);color:var(--gold);font-weight:600;text-decoration:none">Search all ' + section.type + ' licenses &#8599;</a>'
           + '</div></div>';
       }).join('')
-
-    // Disclaimer
     + '<div style="background:var(--amber-pale);border:1px solid var(--amber-border);border-radius:var(--radius-md);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-top:8px">'
     + '<span style="font-size:15px;flex-shrink:0">&#9888;</span>'
     + '<div><div style="font-size:var(--text-base);font-weight:700;color:#92400E;margin-bottom:3px">Always verify before hiring</div>'
-    + '<div style="font-size:var(--text-sm);color:#92400E;line-height:1.5">These are active license holders from the NYC DOB registry. Always confirm a contractor\'s current license status, insurance, and references before signing any contract. License status can change. <a href="https://a810-bisweb.nyc.gov/bisweb/LicenseTypeServlet?vlfirst=Y" target="_blank" style="color:#92400E;font-weight:700;text-decoration:underline">Verify on NYC BIS &#8599;</a></div></div>'
-    + '</div></div>';
+    + '<div style="font-size:var(--text-sm);color:#92400E;line-height:1.5">License holders are pulled live from the NYC DOB registry. Always confirm current license status, insurance, and references before signing any contract. <a href="' + bisUrl + '" target="_blank" style="color:#92400E;font-weight:700;text-decoration:underline">Verify on NYC BIS &#8599;</a></div>'
+    + '</div></div></div>';
 }
-
 
 
 // FEE ESTIMATOR 
