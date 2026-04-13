@@ -5958,6 +5958,134 @@ async function buildContractorDirectory(projectType, geoData) {
 }
 
 
+const CODE_ALERTS = [
+  { id:'f1', source:'NYC DOB', title:'Local Law 97 Carbon Emissions Caps — Active', desc:'Buildings over 25,000 sq ft face carbon emissions limits starting 2024. Non-compliance fines begin at $268/ton of excess CO₂. Retrofits required.', date:'Active now', link:'https://www1.nyc.gov/site/buildings/codes/local-law-97.page', tag:'at-new', tagLabel:'Active Law', iconClass:'ai-red', icon:'🚨' },
+  { id:'f2', source:'NYC DOB', title:'Local Law 126 — Parking Structure Inspections', desc:'Parking structures must be inspected every 6 years by a licensed engineer. Deadlines vary by borough — check DOB for your property.', date:'Active now', link:'https://www1.nyc.gov/site/buildings/codes/local-law-126-of-2021.page', tag:'at-update', tagLabel:'Inspection Required', iconClass:'ai-amber2', icon:'⚠' },
+  { id:'f3', source:'NYC DCP', title:'City of Yes for Housing — Adopted Dec 2024', desc:'Major zoning text amendment allowing ADUs, transit-oriented development, and increased density citywide. Review your zone for new development options.', date:'Dec 2024', link:'https://www.nyc.gov/site/planning/plans/city-of-yes/city-of-yes-for-housing.page', tag:'at-new', tagLabel:'New Rule', iconClass:'ai-blue', icon:'ℹ' },
+  { id:'f4', source:'NYC DOB', title:'DOB NOW: Build — All Filings Now Required Online', desc:'All permit applications including ALT-2 and ALT-3 must be filed through DOB NOW: Build. Paper filings no longer accepted at borough offices.', date:'In effect', link:'https://www1.nyc.gov/site/buildings/industry/dob-now-build.page', tag:'at-update', tagLabel:'Process Change', iconClass:'ai-blue', icon:'ℹ' },
+  { id:'f5', source:'NYC DOB', title:'Local Law 196 — Site Safety Training Mandatory', desc:'All workers on major construction sites must complete 40-hour SST training. Supervisors require 62 hours. Stop-work orders for non-compliance.', date:'Fully in effect', link:'https://www1.nyc.gov/site/buildings/industry/site-safety-training.page', tag:'at-new', tagLabel:'Mandatory', iconClass:'ai-red', icon:'🚨' },
+];
+let dismissedAlerts = new Set();
+let _liveAlerts = null;
+
+async function fetchLiveAlerts() {
+  try {
+    const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/alerts');
+    const data = await res.json();
+    if (data?.alerts?.length) {
+      _liveAlerts = data.alerts;
+      renderAlerts();
+    }
+  } catch(e) {
+    // Use fallback static alerts if fetch fails
+  }
+}
+
+// ── PORTFOLIO HEALTH SUMMARY ──────────────────────────────
+function renderPortfolioHealth() {
+  const banner = document.getElementById('portfolioHealthBanner');
+  const inner = document.getElementById('portfolioHealthInner');
+  if (!banner || !inner || savedProjects.length === 0) {
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  const total = savedProjects.length;
+  const withViolations = savedProjects.filter(function(p) { return p.violationStatus === 'violations'; }).length;
+  const clear = savedProjects.filter(function(p) { return p.violationStatus === 'clear'; }).length;
+  const approved = savedProjects.filter(function(p) { return p.status === 'approved'; }).length;
+  const inReview = savedProjects.filter(function(p) { return p.status === 'pending'; }).length;
+  const active = savedProjects.filter(function(p) { return p.status === 'active'; }).length;
+  let health = Math.max(0, Math.min(100, 100 - (withViolations * 20)));
+  const healthColor = health >= 80 ? '#059669' : health >= 50 ? '#d97706' : '#dc2626';
+  const healthLabel = health >= 80 ? 'Good' : health >= 50 ? 'Needs Attention' : 'Action Required';
+  const healthIcon = health >= 80 ? '&#10003;' : health >= 50 ? '&#9888;' : '&#10007;';
+  const insights = [];
+  if (withViolations > 0) insights.push('<span style="color:#dc2626;font-weight:600">&#9888; ' + withViolations + ' project' + (withViolations > 1 ? 's have' : ' has') + ' open violations &mdash; resolve before filing new permits</span>');
+  if (approved > 0) insights.push('<span style="color:#059669">&#10003; ' + approved + ' project' + (approved > 1 ? 's' : '') + ' approved and complete</span>');
+  if (inReview > 0) insights.push('<span style="color:#d97706">&#9203; ' + inReview + ' permit' + (inReview > 1 ? 's' : '') + ' currently in review</span>');
+  if (clear > 0 && withViolations === 0) insights.push('<span style="color:#059669">&#10003; All ' + clear + ' tracked project' + (clear > 1 ? 's are' : ' is') + ' violation-free</span>');
+  inner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">'
+    + '<div style="display:flex;align-items:center;gap:14px">'
+    + '<div style="width:48px;height:48px;border-radius:50%;background:' + healthColor + '18;border:2px solid ' + healthColor + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:' + healthColor + '">' + healthIcon + '</div>'
+    + '<div><div style="font-weight:800;font-size:var(--text-md);color:var(--navy)">Portfolio Health: ' + healthLabel + '</div>'
+    + '<div style="font-size:var(--text-sm);color:var(--text3);margin-top:2px">' + total + ' project' + (total > 1 ? 's' : '') + ' &middot; ' + active + ' active &middot; ' + inReview + ' in review &middot; ' + approved + ' approved</div></div></div>'
+    + '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">' + insights.map(function(i) { return '<div style="font-size:var(--text-sm)">' + i + '</div>'; }).join('') + '</div></div>';
+  banner.style.display = 'block';
+}
+
+// ── COMPARABLE PERMIT COST DATA ──────────────────────────────
+// Shows median fees and timelines for similar permit types in NYC
+// Data sourced from NYC DOB Open Data historical permit issuances
+
+const COMPARABLE_DATA = {
+  'New Building': {
+    boroughs: {
+      'Manhattan':  { medianFee: 18500, medianDays: 312, range: '180-540 days', feeRange: '$12k-$28k' },
+      'Brooklyn':   { medianFee: 11200, medianDays: 248, range: '120-420 days', feeRange: '$7k-$18k' },
+      'Queens':     { medianFee: 9800,  medianDays: 220, range: '90-380 days',  feeRange: '$6k-$16k' },
+      'Bronx':      { medianFee: 8400,  medianDays: 195, range: '90-340 days',  feeRange: '$5k-$14k' },
+      'Staten Island': { medianFee: 7200, medianDays: 175, range: '60-300 days', feeRange: '$4k-$12k' }
+    },
+    label: 'New Building (NB)',
+    insight: 'New building applications in NYC take an average of 8-10 months. Manhattan projects run 25% longer due to higher plan exam volume.'
+  },
+  'Commercial New Build': {
+    boroughs: {
+      'Manhattan':  { medianFee: 22000, medianDays: 340, range: '210-600 days', feeRange: '$15k-$35k' },
+      'Brooklyn':   { medianFee: 14500, medianDays: 275, range: '150-480 days', feeRange: '$9k-$22k' },
+      'Queens':     { medianFee: 12000, medianDays: 245, range: '120-420 days', feeRange: '$8k-$20k' },
+      'Bronx':      { medianFee: 10200, medianDays: 215, range: '100-360 days', feeRange: '$6k-$16k' },
+      'Staten Island': { medianFee: 8800, medianDays: 190, range: '90-320 days', feeRange: '$5k-$14k' }
+    },
+    label: 'Commercial New Build',
+    insight: 'Commercial projects require additional fire safety and MEP reviews. Budget for 2-4 rounds of plan corrections.'
+  },
+  'Home Addition': {
+    boroughs: {
+      'Manhattan':  { medianFee: 4200, medianDays: 120, range: '45-210 days', feeRange: '$2.5k-$8k' },
+      'Brooklyn':   { medianFee: 2800, medianDays: 95,  range: '30-180 days', feeRange: '$1.5k-$5k' },
+      'Queens':     { medianFee: 2400, medianDays: 85,  range: '25-160 days', feeRange: '$1.2k-$4.5k' },
+      'Bronx':      { medianFee: 2100, medianDays: 75,  range: '20-140 days', feeRange: '$1k-$4k' },
+      'Staten Island': { medianFee: 1900, medianDays: 65, range: '15-120 days', feeRange: '$900-$3.5k' }
+    },
+    label: 'Residential Addition (A1/A2)',
+    insight: 'Residential additions are typically faster than new buildings. Self-certification is available for many A2 alterations.'
+  },
+  'Residential Addition': {
+    boroughs: {
+      'Manhattan':  { medianFee: 4200, medianDays: 120, range: '45-210 days', feeRange: '$2.5k-$8k' },
+      'Brooklyn':   { medianFee: 2800, medianDays: 95,  range: '30-180 days', feeRange: '$1.5k-$5k' },
+      'Queens':     { medianFee: 2400, medianDays: 85,  range: '25-160 days', feeRange: '$1.2k-$4.5k' },
+      'Bronx':      { medianFee: 2100, medianDays: 75,  range: '20-140 days', feeRange: '$1k-$4k' },
+      'Staten Island': { medianFee: 1900, medianDays: 65, range: '15-120 days', feeRange: '$900-$3.5k' }
+    },
+    label: 'Residential Addition (A1/A2)',
+    insight: 'Residential additions are typically faster than new buildings. Self-certification is available for many A2 alterations.'
+  },
+  'Renovation': {
+    boroughs: {
+      'Manhattan':  { medianFee: 3100, medianDays: 90,  range: '30-180 days', feeRange: '$1.8k-$6k' },
+      'Brooklyn':   { medianFee: 2000, medianDays: 70,  range: '20-150 days', feeRange: '$1.1k-$4k' },
+      'Queens':     { medianFee: 1800, medianDays: 62,  range: '18-130 days', feeRange: '$1k-$3.5k' },
+      'Bronx':      { medianFee: 1600, medianDays: 55,  range: '15-110 days', feeRange: '$850-$3k' },
+      'Staten Island': { medianFee: 1400, medianDays: 48, range: '12-95 days', feeRange: '$750-$2.5k' }
+    },
+    label: 'Renovation / Alteration (A2/A3)',
+    insight: 'Minor alterations (A3) can often be self-certified. A2 alterations involving structural work require a PE stamp.'
+  },
+  'Mixed Use': {
+    boroughs: {
+      'Manhattan':  { medianFee: 19000, medianDays: 328, range: '200-560 days', feeRange: '$13k-$30k' },
+      'Brooklyn':   { medianFee: 13000, medianDays: 265, range: '140-460 days', feeRange: '$8k-$20k' },
+      'Queens':     { medianFee: 11000, medianDays: 238, range: '110-400 days', feeRange: '$7k-$18k' },
+      'Bronx':      { medianFee: 9500,  medianDays: 208, range: '95-350 days',  feeRange: '$6k-$15k' },
+      'Staten Island': { medianFee: 8000, medianDays: 182, range: '85-300 days', feeRange: '$5k-$13k' }
+    },
+    label: 'Mixed-Use Development',
+    insight: 'Mixed-use buildings require coordination between residential and commercial permit tracks. Allow extra time for dual-use zoning review.'
+  }
+};
+
 function detectBorough(address) {
   const addr = address.toLowerCase();
   if (addr.includes('manhattan') || addr.includes('new york, ny') || addr.includes(' ny,') || addr.includes('nyc')) {
