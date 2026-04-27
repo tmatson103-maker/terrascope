@@ -3379,9 +3379,16 @@ async function fetchNYCDobData(address) {
   const { houseNo, street } = parsed;
 
   try {
-    // Fetch from DOB NOW active permits (rbx6-tga4) and historical (ipu4-2q9a) in parallel
-    // Two reliable datasets: historical permits (ipu4-2q9a) + DOB violations (3h2n-5cm9)
-    const [histRes, violRes] = await Promise.allSettled([
+    // Four datasets in parallel:
+    //   nowRes  - DOB NOW active permits (rbx6-tga4)
+    //   histRes - historical permits (ipu4-2q9a)
+    //   violRes - DOB violations (3h2n-5cm9)
+    //   ecbRes  - ECB / OATH violations (6bgk-3dad)
+    const [nowRes, histRes, violRes, ecbRes] = await Promise.allSettled([
+      fetch(
+        `https://data.cityofnewyork.us/resource/rbx6-tga4.json?house__=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20&$order=filing_date+DESC`,
+        { headers: { 'Accept': 'application/json' } }
+      ),
       fetch(
         `https://data.cityofnewyork.us/resource/ipu4-2q9a.json?house__=${encodeURIComponent(houseNo)}&street_name=${encodeURIComponent(street)}&$limit=20`,
         { headers: { 'Accept': 'application/json' } }
@@ -3389,10 +3396,12 @@ async function fetchNYCDobData(address) {
       fetch(
         `https://data.cityofnewyork.us/resource/3h2n-5cm9.json?house_number=${encodeURIComponent(houseNo)}&street=${encodeURIComponent(street)}&$limit=20`,
         { headers: { 'Accept': 'application/json' } }
+      ),
+      fetch(
+        `https://data.cityofnewyork.us/resource/6bgk-3dad.json?respondent_house_number=${encodeURIComponent(houseNo)}&respondent_street=${encodeURIComponent(street)}&$limit=20`,
+        { headers: { 'Accept': 'application/json' } }
       )
     ]);
-    const nowRes = { status: 'fulfilled', value: { ok: false } };
-    const ecbRes = { status: 'fulfilled', value: { ok: false } };
 
     let activePermits = [];
     let historicalPermits = [];
@@ -3401,11 +3410,13 @@ async function fetchNYCDobData(address) {
       const data = await nowRes.value.json();
       if (Array.isArray(data) && data.length > 0) {
         activePermits = data.map(p => ({
-          type: p.work_permit_type || p.filing_status || 'Permit',
-          status: p.filing_status || 'Active',
+          type: p.work_permit_type || p.permit_type || p.filing_status || 'Permit',
+          status: p.filing_status || p.permit_status || 'Active',
           desc: p.job_description || p.work_type || '',
-          date: p.issued_date || p.filing_date || '',
-          jobType: p.job_type || ''
+          date: p.issued_date || p.filing_date || p.approved_date || '',
+          jobType: p.job_type || '',
+          jobNum: p.job_filing_number || p.job_number || '',
+          cost: p.initial_cost || p.estimated_job_costs || ''
         }));
       }
     }
@@ -3544,7 +3555,7 @@ function applyNYCDobToUI(dobData) {
     + '<div style="background:var(--slate);border-bottom:1px solid var(--border);padding:8px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">'
     + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--navy)">' + allPermits.length + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)">Total Permits</div></div>'
     + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:#10b981">' + (dobData.activePermits?.length || 0) + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)">Active</div></div>'
-    + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--navy)">' + (allPermits[0] ? new Date(allPermits[0].issuance_date || allPermits[0].filing_date || '').getFullYear() || '—' : '—') + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)">Most Recent</div></div>'
+    + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--navy)">' + (allPermits[0] && allPermits[0].date ? (function(){var d=new Date(allPermits[0].date);return isNaN(d)?'—':d.toLocaleDateString('en-US',{month:'short',year:'numeric'});})() : '—') + '</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)">Most Recent</div></div>'
     + '</div>'
     + permitRows
     + (remaining > 0 ? '<div style="padding:10px;text-align:center;font-size:var(--text-sm);color:var(--text3);border-top:1px solid var(--border)">+' + remaining + ' more permits on file</div>' : '')
