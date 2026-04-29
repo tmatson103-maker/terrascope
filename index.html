@@ -4503,12 +4503,57 @@ const SCENARIOS = {
 
 // AUTH MODAL 
 let currentTab = 'signin'; let pwVisible = false;
-function openModal(tab='signin'){ document.getElementById('authSuccess').style.display='none'; document.getElementById('authContent').style.display='block'; switchTab(tab); document.getElementById('modalOverlay').classList.add('open'); document.body.style.overflow='hidden'; setTimeout(()=>document.getElementById('emailInput').focus(),300); }
+function openModal(tab='signin'){
+  const success = document.getElementById('authSuccess');
+  if (success) success.style.display = 'none';
+  const content = document.getElementById('authContent');
+  if (content) content.style.display = 'block';
+  switchTab(tab);
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => {
+    const emailInput = document.getElementById('emailInput');
+    if (emailInput) emailInput.focus();
+  }, 300);
+}
 window.openModal = openModal;
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow=''; }
-function handleOverlayClick(e){ if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+function closeModal(){
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleOverlayClick(e){
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay && e.target === overlay) closeModal();
+}
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
-function switchTab(tab){ currentTab=tab; const si=tab==='signin'; document.getElementById('tabSignIn').className='auth-tab'+(si?' active':''); document.getElementById('tabSignUp').className='auth-tab'+(!si?' active':''); document.getElementById('modalHeadline').textContent=si?'Welcome back':'Create your account'; document.getElementById('modalSubline').textContent=si?'Sign in to your compliance dashboard.':'Start your free account. No credit card required.'; document.getElementById('nameField').style.display=si?'none':'flex'; document.getElementById('confirmField').style.display=si?'none':'flex'; document.getElementById('forgotLink').style.display=si?'block':'none'; document.getElementById('authSubmitText').textContent=si?'Sign In to Terrascope':'Create Free Account'; document.getElementById('footerText').textContent=si?"Don't have an account?":'Already have an account?'; document.getElementById('footerSwitch').textContent=si?' Create one free':' Sign in'; }
+function switchTab(tab){
+  currentTab = tab;
+  const si = tab === 'signin';
+  // Each lookup may be null if the modal isn't currently in the DOM
+  // (e.g. user is already signed in). Bail out gracefully on each one.
+  const tabSi = document.getElementById('tabSignIn');
+  if (tabSi) tabSi.className = 'auth-tab' + (si ? ' active' : '');
+  const tabSu = document.getElementById('tabSignUp');
+  if (tabSu) tabSu.className = 'auth-tab' + (!si ? ' active' : '');
+  const headline = document.getElementById('modalHeadline');
+  if (headline) headline.textContent = si ? 'Welcome back' : 'Create your account';
+  const subline = document.getElementById('modalSubline');
+  if (subline) subline.textContent = si ? 'Sign in to your compliance dashboard.' : 'Start your free account. No credit card required.';
+  const nameField = document.getElementById('nameField');
+  if (nameField) nameField.style.display = si ? 'none' : 'flex';
+  const confirmField = document.getElementById('confirmField');
+  if (confirmField) confirmField.style.display = si ? 'none' : 'flex';
+  const forgotLink = document.getElementById('forgotLink');
+  if (forgotLink) forgotLink.style.display = si ? 'block' : 'none';
+  const submitText = document.getElementById('authSubmitText');
+  if (submitText) submitText.textContent = si ? 'Sign In to Terrascope' : 'Create Free Account';
+  const footerText = document.getElementById('footerText');
+  if (footerText) footerText.textContent = si ? "Don't have an account?" : 'Already have an account?';
+  const footerSwitch = document.getElementById('footerSwitch');
+  if (footerSwitch) footerSwitch.textContent = si ? ' Create one free' : ' Sign in';
+}
 function switchTabLink(e){ e.preventDefault(); switchTab(currentTab==='signin'?'signup':'signin'); }
 // Wire all modal functions globally right away
 window.closeModal = closeModal;
