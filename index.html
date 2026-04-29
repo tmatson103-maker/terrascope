@@ -4590,13 +4590,24 @@ async function submitResetPassword(token) {
 
 function handleForgotPassword(e){
   e.preventDefault();
-  const email = document.getElementById('forgotEmail')?.value?.trim();
+  // Element ID matches the forgot-password input: forgotEmailInput
+  const email = document.getElementById('forgotEmailInput')?.value?.trim() || '';
   if (!email) { showToast('Enter your email', 'warn', 3000); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'warn', 3000); return; }
   // Demo mode — just sign them in directly
   const name = email.split('@')[0];
-  try { localStorage.setItem('ts_session', JSON.stringify({ email, name, token: 'demo_' + Date.now() })); } catch(e2) {}
-  window._authUser = { email, name };
-  closeModal('signup');
+  const token = 'demo_' + Date.now();
+  try {
+    localStorage.setItem('ts_session', JSON.stringify({ email, name, token }));
+    localStorage.setItem('ts_token', token);
+    localStorage.setItem('ts_user_email', email);
+    localStorage.setItem('ts_user_name', name);
+  } catch(e2) {}
+  window._authUser = { email, name, token };
+  window._tsToken = token;
+  window._tsUserEmail = email;
+  window._tsUserName = name;
+  closeModal();
   updateAuthUI({ email, name });
   showToast('Signed in as ' + email, 'success', 3000);
 }
@@ -8006,13 +8017,27 @@ document.addEventListener('DOMContentLoaded', function() { if(document.getElemen
 
 // ── MISSING FUNCTION STUBS ────────────────────────────────────────────────────
 function submitForgotPassword() {
-  const email = document.getElementById('forgotEmail')?.value?.trim();
+  // Element ID matches the forgot-password input in the modal: forgotEmailInput.
+  // Demo mode: signs the user in directly with the provided email rather than
+  // sending a real reset email.
+  const email = document.getElementById('forgotEmailInput')?.value?.trim() || '';
   if (!email) { showToast('Enter your email address', 'warn', 3000); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'warn', 3000); return; }
   const name = email.split('@')[0];
-  try { localStorage.setItem('ts_session', JSON.stringify({ email, name, token: 'demo_' + Date.now() })); } catch(e) {}
-  window._authUser = { email, name };
-  closeModal && closeModal('signup');
-  updateAuthUI && updateAuthUI({ email, name });
+  const token = 'demo_' + Date.now();
+  const signedUpAt = new Date().toISOString();
+  try {
+    localStorage.setItem('ts_session', JSON.stringify({ email, name, token, signedUpAt }));
+    localStorage.setItem('ts_token', token);
+    localStorage.setItem('ts_user_email', email);
+    localStorage.setItem('ts_user_name', name);
+  } catch(e) {}
+  window._authUser = { email, name, token };
+  window._tsToken = token;
+  window._tsUserEmail = email;
+  window._tsUserName = name;
+  if (typeof closeModal === 'function') closeModal();
+  if (typeof updateAuthUI === 'function') updateAuthUI({ email, name });
   showToast('Signed in as ' + email, 'success', 3000);
 }
 
