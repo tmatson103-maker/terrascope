@@ -4603,22 +4603,33 @@ function handleForgotPassword(e){
 
 function handleEmailAuth(e){
   e.preventDefault();
-  const btn = document.getElementById('authSubmit');
+  // Element IDs match the auth form HTML in the modal: emailInput, passwordInput,
+  // nameInput, confirmInput, authSubmitBtn, authSubmitText. The signup vs signin
+  // mode is tracked by the global `currentTab` variable set by switchTab().
+  const btn = document.getElementById('authSubmitBtn');
   const btnText = document.getElementById('authSubmitText');
-  const isSignup = document.getElementById('authMode')?.value === 'signup';
-  const email = document.getElementById('authEmail')?.value?.trim();
-  const password = document.getElementById('authPassword')?.value;
-  const name = document.getElementById('authName')?.value?.trim() || email.split('@')[0];
+  const isSignup = (typeof currentTab !== 'undefined' && currentTab === 'signup');
+  const email = document.getElementById('emailInput')?.value?.trim() || '';
+  const password = document.getElementById('passwordInput')?.value || '';
+  const nameInput = document.getElementById('nameInput')?.value?.trim() || '';
+  const confirmPassword = document.getElementById('confirmInput')?.value || '';
 
+  // Validate email
   if (!email) { showToast('Enter your email', 'warn', 3000); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'warn', 3000); return; }
+
+  // Validate password
+  if (!password) { showToast('Enter your password', 'warn', 3000); return; }
+  if (isSignup && password.length < 8) { showToast('Password must be at least 8 characters', 'warn', 3000); return; }
+  if (isSignup && password !== confirmPassword) { showToast('Passwords do not match', 'warn', 3000); return; }
+
+  // Compute display name — use entered name on signup, otherwise derive from email
+  const displayName = nameInput || email.split('@')[0];
+  const token = 'demo_' + Date.now();
+  const signedUpAt = new Date().toISOString();
 
   if (btn) btn.disabled = true;
   if (btnText) btnText.innerHTML = '<div class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle"></div> ' + (isSignup ? 'Creating account…' : 'Signing in…');
-
-  // Save to KV for lead capture, then sign in locally
-  const displayName = name || email.split('@')[0];
-  const token = 'demo_' + Date.now();
-  const signedUpAt = new Date().toISOString();
 
   // Fire-and-forget to worker — capture lead even if it fails
   fetch('https://terrascope-workerjs.tmatson103.workers.dev/leads/capture', {
@@ -4629,14 +4640,22 @@ function handleEmailAuth(e){
 
   setTimeout(() => {
     // Store session locally
-    try { localStorage.setItem('ts_session', JSON.stringify({ email, name: displayName, token, signedUpAt })); } catch(e) {}
+    try {
+      localStorage.setItem('ts_session', JSON.stringify({ email, name: displayName, token, signedUpAt }));
+      localStorage.setItem('ts_token', token);
+      localStorage.setItem('ts_user_email', email);
+      localStorage.setItem('ts_user_name', displayName);
+    } catch(err) {}
     window._authUser = { email, name: displayName, token };
+    window._tsToken = token;
+    window._tsUserEmail = email;
+    window._tsUserName = displayName;
     // Update UI
-    closeModal('signup');
+    closeModal();
     updateAuthUI({ email, name: displayName });
     showToast('Welcome' + (isSignup ? '' : ' back') + ', ' + displayName + '!', 'success', 3000);
     if (btn) btn.disabled = false;
-    if (btnText) btnText.textContent = isSignup ? 'Create Account' : 'Sign In to Terrascope';
+    if (btnText) btnText.textContent = isSignup ? 'Create Free Account' : 'Sign In to Terrascope';
   }, 800);
 }
 
