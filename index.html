@@ -2283,6 +2283,47 @@ function initMap(address) {
 const TMap = { create: () => null };
 </script>
  <script>
+// ════════════════════════════════════════════════════════════════════════════
+// TERRASCOPE WORKER API — v2 (real backend, replaces demo-mode auth)
+// ════════════════════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://terrascope-workerjs.tmatson103.workers.dev';
+const AUTH_VERSION = 'v2';
+
+// One-time wipe of pre-v2 demo-mode sessions. Anyone with an old localStorage
+// session gets logged out and prompted to sign up fresh (their accounts were
+// never persisted server-side, so there's nothing to lose).
+(function migrateLegacySessions() {
+  try {
+    const seen = localStorage.getItem('ts_auth_version');
+    if (seen !== AUTH_VERSION) {
+      // Wipe legacy demo-mode keys
+      ['ts_session', 'ts_token', 'ts_user_email', 'ts_user_name', 'ts_saved-projects'].forEach(k => {
+        try { localStorage.removeItem(k); } catch(e) {}
+      });
+      localStorage.setItem('ts_auth_version', AUTH_VERSION);
+    }
+  } catch(e) {}
+})();
+
+// Authenticated fetch helper. Adds Authorization header when a token exists.
+// Returns parsed JSON, or { error } object on failure (never throws).
+async function apiFetch(path, options = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  const token = localStorage.getItem('ts_token');
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const res = await fetch(WORKER_URL + path, Object.assign({}, options, { headers }));
+    let data = {};
+    try { data = await res.json(); } catch(e) {}
+    if (!res.ok) {
+      return { error: data.error || ('HTTP ' + res.status), status: res.status };
+    }
+    return data;
+  } catch (err) {
+    return { error: 'Network error: ' + err.message, status: 0 };
+  }
+}
+
 // STORAGE POLYFILL — falls back to localStorage when window.storage (artifact API) is unavailable
 if (!window.storage) {
   window.storage = {
@@ -4141,44 +4182,48 @@ async function saveToProjects() {
  logActivity('save', 'Project saved', currentAddress + ' — ' + selectedType);
 }
 
+// Persist projects — saves each project individually to the Worker so we can
+// also delete and update individually. Falls back to localStorage when not
+// signed in (so a guest can still try the analyzer and not lose state on refresh).
 async function persistProjects() {
-  // Always save to localStorage as fallback
+  // Always keep localStorage as a safety net while signed in too
   try { localStorage.setItem('ts_saved-projects', JSON.stringify(savedProjects)); } catch(e) {}
-  // If logged in, also save to server
-  if (window._tsToken) {
-    try {
-      await fetch('https://terrascope-workerjs.tmatson103.workers.dev/projects/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: window._tsToken, projects: savedProjects }),
-      });
-    } catch(e) { /* fail silently — localStorage backup already saved */ }
-  }
+  if (!window._tsToken) return;
+  // Save each project individually. Run in parallel to keep this snappy.
+  await Promise.all((savedProjects || []).map(async (project) => {
+    const result = await apiFetch('/projects/save', {
+      method: 'POST',
+      body: JSON.stringify({ project }),
+    });
+    if (result && result.project && result.project.id) {
+      // Adopt server-assigned id if the local one was missing
+      project.id = result.project.id;
+    }
+  }));
 }
 
 async function loadSavedProjects() {
-  // Try server first if logged in
+  // Try the Worker first if signed in
   if (window._tsToken) {
-    try {
-      const res = await fetch('https://terrascope-workerjs.tmatson103.workers.dev/projects/load', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: window._tsToken }),
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
-        savedProjects = data.projects;
-        renderDashboard();
-        return;
-      }
-    } catch(e) { /* fall through to localStorage */ }
+    const result = await apiFetch('/projects/load', { method: 'GET' });
+    if (!result.error && Array.isArray(result.projects)) {
+      savedProjects = result.projects;
+      try { localStorage.setItem('ts_saved-projects', JSON.stringify(savedProjects)); } catch(e) {}
+      if (typeof renderDashboard === 'function') renderDashboard();
+      return;
+    }
+    // If the load failed, fall through to localStorage so the user isn't
+    // staring at an empty dashboard during a transient Worker outage.
   }
-  // Fallback: localStorage
+  // Fallback: localStorage (guest mode or Worker unreachable)
   try {
     const local = localStorage.getItem('ts_saved-projects');
     if (local) {
       const data = JSON.parse(local);
-      if (Array.isArray(data) && data.length > 0) { savedProjects = data; renderDashboard(); }
+      if (Array.isArray(data) && data.length > 0) {
+        savedProjects = data;
+        if (typeof renderDashboard === 'function') renderDashboard();
+      }
     }
   } catch(e) {}
 }
@@ -4546,7 +4591,8 @@ function switchTab(tab){
   const confirmField = document.getElementById('confirmField');
   if (confirmField) confirmField.style.display = si ? 'none' : 'flex';
   const forgotLink = document.getElementById('forgotLink');
-  if (forgotLink) forgotLink.style.display = si ? 'block' : 'none';
+  // Phase 1: real reset email flow not yet built. Keep hidden until Phase 2.
+  if (forgotLink) forgotLink.style.display = 'none';
   const submitText = document.getElementById('authSubmitText');
   if (submitText) submitText.textContent = si ? 'Sign In to Terrascope' : 'Create Free Account';
   const footerText = document.getElementById('footerText');
@@ -4635,33 +4681,14 @@ async function submitResetPassword(token) {
 
 function handleForgotPassword(e){
   e.preventDefault();
-  // Element ID matches the forgot-password input: forgotEmailInput
-  const email = document.getElementById('forgotEmailInput')?.value?.trim() || '';
-  if (!email) { showToast('Enter your email', 'warn', 3000); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'warn', 3000); return; }
-  // Demo mode — just sign them in directly
-  const name = email.split('@')[0];
-  const token = 'demo_' + Date.now();
-  try {
-    localStorage.setItem('ts_session', JSON.stringify({ email, name, token }));
-    localStorage.setItem('ts_token', token);
-    localStorage.setItem('ts_user_email', email);
-    localStorage.setItem('ts_user_name', name);
-  } catch(e2) {}
-  window._authUser = { email, name, token };
-  window._tsToken = token;
-  window._tsUserEmail = email;
-  window._tsUserName = name;
-  closeModal();
-  updateAuthUI({ email, name });
-  showToast('Signed in as ' + email, 'success', 3000);
+  // Phase 2 will implement real password reset via Resend.
+  showToast('Password reset is coming soon. Email tmatson103@gmail.com if you need help.', 'warn', 5000);
 }
 
-function handleEmailAuth(e){
+async function handleEmailAuth(e){
   e.preventDefault();
-  // Element IDs match the auth form HTML in the modal: emailInput, passwordInput,
-  // nameInput, confirmInput, authSubmitBtn, authSubmitText. The signup vs signin
-  // mode is tracked by the global `currentTab` variable set by switchTab().
+  // Real auth (v2): calls Worker /auth/signup or /auth/signin and persists
+  // the real session token. No more demo-mode local-only sessions.
   const btn = document.getElementById('authSubmitBtn');
   const btnText = document.getElementById('authSubmitText');
   const isSignup = (typeof currentTab !== 'undefined' && currentTab === 'signup');
@@ -4679,41 +4706,63 @@ function handleEmailAuth(e){
   if (isSignup && password.length < 8) { showToast('Password must be at least 8 characters', 'warn', 3000); return; }
   if (isSignup && password !== confirmPassword) { showToast('Passwords do not match', 'warn', 3000); return; }
 
-  // Compute display name — use entered name on signup, otherwise derive from email
-  const displayName = nameInput || email.split('@')[0];
-  const token = 'demo_' + Date.now();
-  const signedUpAt = new Date().toISOString();
-
+  const originalBtnText = isSignup ? 'Create Free Account' : 'Sign In to Terrascope';
   if (btn) btn.disabled = true;
   if (btnText) btnText.innerHTML = '<div class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle"></div> ' + (isSignup ? 'Creating account…' : 'Signing in…');
 
-  // Fire-and-forget to worker — capture lead even if it fails
-  fetch('https://terrascope-workerjs.tmatson103.workers.dev/leads/capture', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, name: displayName, type: isSignup ? 'signup' : 'signin', signedUpAt, source: 'file_local' })
-  }).catch(() => {}); // Silent fail — don't block sign-in
+  // Hit the Worker
+  const endpoint = isSignup ? '/auth/signup' : '/auth/signin';
+  const payload = isSignup
+    ? { email, password, name: nameInput }
+    : { email, password };
 
-  setTimeout(() => {
-    // Store session locally
-    try {
-      localStorage.setItem('ts_session', JSON.stringify({ email, name: displayName, token, signedUpAt }));
-      localStorage.setItem('ts_token', token);
-      localStorage.setItem('ts_user_email', email);
-      localStorage.setItem('ts_user_name', displayName);
-    } catch(err) {}
-    window._authUser = { email, name: displayName, token };
-    window._tsToken = token;
-    window._tsUserEmail = email;
-    window._tsUserName = displayName;
-    // Update UI
-    closeModal();
-    updateAuthUI({ email, name: displayName });
-    showToast('Welcome' + (isSignup ? '' : ' back') + ', ' + displayName + '!', 'success', 3000);
-    if (btn) btn.disabled = false;
-    if (btnText) btnText.textContent = isSignup ? 'Create Free Account' : 'Sign In to Terrascope';
-  }, 800);
+  const result = await apiFetch(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  // Restore button state
+  if (btn) btn.disabled = false;
+  if (btnText) btnText.textContent = originalBtnText;
+
+  if (result.error) {
+    showToast(result.error, 'error', 4000);
+    return;
+  }
+
+  // Persist session
+  try {
+    localStorage.setItem('ts_token', result.token);
+    localStorage.setItem('ts_user_email', result.user.email);
+    localStorage.setItem('ts_user_name', result.user.name);
+  } catch(err) {}
+  window._tsToken = result.token;
+  window._tsUserEmail = result.user.email;
+  window._tsUserName = result.user.name;
+  window._authUser = { email: result.user.email, name: result.user.name, token: result.token };
+
+  closeModal();
+  updateAuthUI({ email: result.user.email, name: result.user.name });
+  if (typeof loadSavedProjects === 'function') loadSavedProjects();
+  showToast('Welcome' + (isSignup ? '' : ' back') + ', ' + result.user.name + '!', 'success', 3000);
 }
+
+// Sign-out — invalidates the Worker session and clears local state.
+async function handleSignOut() {
+  await apiFetch('/auth/signout', { method: 'POST' });
+  ['ts_token', 'ts_user_email', 'ts_user_name', 'ts_saved-projects'].forEach(k => {
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+  window._tsToken = null;
+  window._tsUserEmail = null;
+  window._tsUserName = null;
+  window._authUser = null;
+  if (typeof updateAuthUI === 'function') updateAuthUI(null);
+  showToast('Signed out', 'success', 2000);
+  // Reload to reset any in-memory project state
+  setTimeout(() => location.reload(), 600);
+}
+window.handleSignOut = handleSignOut;
 
 function socialAuth(provider){
   showToast(`${provider} sign-in coming soon — use email for now.`, 'warn', 3000);
@@ -4738,19 +4787,44 @@ function updateAuthUI(user) {
   }
 }
 
-// Restore session on page load
+// Restore session on page load — verifies token with the Worker so an expired
+// or revoked session gets cleared instead of showing stale "logged in" UI.
 (function restoreSession() {
+  const token = (function() { try { return localStorage.getItem('ts_token'); } catch(e) { return null; } })();
+  if (!token) return;
+
+  // Optimistically set state from localStorage so the UI doesn't flash signed-out.
+  // Then verify with the server and clear if invalid.
   try {
-    const token = localStorage.getItem('ts_token');
-    const email = localStorage.getItem('ts_user_email');
-    const name = localStorage.getItem('ts_user_name');
-    if (token && email) {
-      window._tsToken = token;
-      window._tsUserEmail = email;
-      window._tsUserName = name || email.split('@')[0];
-      document.addEventListener('DOMContentLoaded', () => { updateAuthUI(); loadSavedProjects(); });
-    }
+    window._tsToken = token;
+    window._tsUserEmail = localStorage.getItem('ts_user_email');
+    window._tsUserName = localStorage.getItem('ts_user_name') || (window._tsUserEmail ? window._tsUserEmail.split('@')[0] : '');
   } catch(e) {}
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof updateAuthUI === 'function') updateAuthUI();
+    const result = await apiFetch('/auth/me', { method: 'GET' });
+    if (result.error) {
+      // Token expired or invalid — clean up
+      ['ts_token', 'ts_user_email', 'ts_user_name', 'ts_saved-projects'].forEach(k => {
+        try { localStorage.removeItem(k); } catch(e) {}
+      });
+      window._tsToken = null;
+      window._tsUserEmail = null;
+      window._tsUserName = null;
+      if (typeof updateAuthUI === 'function') updateAuthUI(null);
+      return;
+    }
+    // Refresh stored info in case server has more recent name
+    try {
+      localStorage.setItem('ts_user_email', result.user.email);
+      localStorage.setItem('ts_user_name', result.user.name);
+    } catch(e) {}
+    window._tsUserEmail = result.user.email;
+    window._tsUserName = result.user.name;
+    if (typeof updateAuthUI === 'function') updateAuthUI({ email: result.user.email, name: result.user.name });
+    if (typeof loadSavedProjects === 'function') loadSavedProjects();
+  });
 })();
 
 // TOAST SYSTEM 
@@ -8062,28 +8136,8 @@ document.addEventListener('DOMContentLoaded', function() { if(document.getElemen
 
 // ── MISSING FUNCTION STUBS ────────────────────────────────────────────────────
 function submitForgotPassword() {
-  // Element ID matches the forgot-password input in the modal: forgotEmailInput.
-  // Demo mode: signs the user in directly with the provided email rather than
-  // sending a real reset email.
-  const email = document.getElementById('forgotEmailInput')?.value?.trim() || '';
-  if (!email) { showToast('Enter your email address', 'warn', 3000); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'warn', 3000); return; }
-  const name = email.split('@')[0];
-  const token = 'demo_' + Date.now();
-  const signedUpAt = new Date().toISOString();
-  try {
-    localStorage.setItem('ts_session', JSON.stringify({ email, name, token, signedUpAt }));
-    localStorage.setItem('ts_token', token);
-    localStorage.setItem('ts_user_email', email);
-    localStorage.setItem('ts_user_name', name);
-  } catch(e) {}
-  window._authUser = { email, name, token };
-  window._tsToken = token;
-  window._tsUserEmail = email;
-  window._tsUserName = name;
-  if (typeof closeModal === 'function') closeModal();
-  if (typeof updateAuthUI === 'function') updateAuthUI({ email, name });
-  showToast('Signed in as ' + email, 'success', 3000);
+  // Phase 2 will implement real password reset via Resend.
+  showToast('Password reset is coming soon. Email tmatson103@gmail.com if you need help.', 'warn', 5000);
 }
 
 function restoreSignInForm() {
