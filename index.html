@@ -1314,6 +1314,41 @@ button:focus-visible {
 /* Selection color */
 ::selection { background: var(--navy-tint2); color: var(--navy); }
 
+/* User dropdown (signed-in state) */
+.user-menu { position:relative; display:inline-block; }
+.user-menu-btn {
+  color:var(--navy); font-size:var(--text-base); font-weight:600;
+  padding:7px 15px; border-radius:var(--radius-md);
+  border:1.5px solid var(--border2); background:transparent;
+  cursor:pointer; font-family:var(--sans); transition:all .15s;
+  display:inline-flex; align-items:center; gap:6px;
+}
+.user-menu-btn:hover { border-color:var(--navy); background:var(--navy-tint); }
+.user-menu-btn .chev { transition:transform .15s; font-size:10px; opacity:.7; }
+.user-menu.open .user-menu-btn .chev { transform:rotate(180deg); }
+.user-menu-dropdown {
+  display:none; position:absolute; top:calc(100% + 6px); right:0;
+  min-width:200px; background:white; border:1px solid var(--border);
+  border-radius:var(--radius-md); box-shadow:0 8px 24px rgba(27,43,75,.12);
+  padding:6px; z-index:1000;
+}
+.user-menu.open .user-menu-dropdown { display:block; }
+.user-menu-header {
+  padding:10px 12px 12px; border-bottom:1px solid var(--border);
+  margin-bottom:4px;
+}
+.user-menu-header .um-name { font-weight:700; color:var(--navy); font-size:var(--text-base); }
+.user-menu-header .um-email { font-size:var(--text-sm); color:var(--text3); margin-top:2px; word-break:break-all; }
+.user-menu-item {
+  display:block; width:100%; text-align:left; padding:9px 12px;
+  border:none; background:transparent; border-radius:var(--radius-sm);
+  font-family:var(--sans); font-size:var(--text-base); color:var(--text);
+  cursor:pointer; transition:background .12s;
+}
+.user-menu-item:hover { background:var(--slate); }
+.user-menu-item.danger { color:#B91C1C; }
+.user-menu-item.danger:hover { background:#FEF2F2; }
+
 </style>
 <script>
 // Stub switchPage — ensures onclick handlers work even if main script hasn't executed yet
@@ -4775,17 +4810,94 @@ function showAuthSuccess(){
 }
 
 function updateAuthUI(user) {
-  if (user) { window._tsUserName = user.name; window._tsToken = user.token; window._tsEmail = user.email; }
-  const name = window._tsUserName || '';
+  if (user) {
+    window._tsUserName = user.name;
+    if (user.token) window._tsToken = user.token;
+    window._tsUserEmail = user.email;
+  } else if (user === null) {
+    // Explicit sign-out: clear in-memory state
+    window._tsUserName = null;
+    window._tsToken = null;
+    window._tsUserEmail = null;
+    window._authUser = null;
+  }
+
   const isLoggedIn = !!(window._tsToken || window._authUser);
-  // Update Sign In button
-  const signInBtn = document.querySelector('.nav-auth-signin') || document.querySelector('[onclick*="openModal(\'signin\')"]');
+  const name = window._tsUserName || '';
+  const email = window._tsUserEmail || '';
+  const firstName = name ? name.split(' ')[0] : '';
+
+  // Find the navbar's right side (where Sign In + Start Free Trial live)
+  const signInBtn = document.querySelector('.nav-right .btn-ghost') ||
+                    document.querySelector('[onclick*="openModal(\'signin\')"]');
   const startTrialBtn = document.querySelector('[onclick*="openModal(\'signup\')"]');
-  if (isLoggedIn && signInBtn) {
-    signInBtn.textContent = name ? `Hi, ${name.split(' ')[0]}` : 'My Account';
-    signInBtn.onclick = () => switchPage('dashboard');
+
+  // Always remove any existing user menu first — keeps state in sync.
+  const existing = document.getElementById('userMenu');
+  if (existing) existing.remove();
+
+  if (isLoggedIn) {
+    // Hide the original Sign In and Start Free Trial buttons
+    if (signInBtn) signInBtn.style.display = 'none';
+    if (startTrialBtn) startTrialBtn.style.display = 'none';
+    // Build the user menu
+    const navRight = document.querySelector('.nav-right');
+    if (!navRight) return;
+    const menu = document.createElement('div');
+    menu.className = 'user-menu';
+    menu.id = 'userMenu';
+    menu.innerHTML = `
+      <button class="user-menu-btn" type="button" onclick="toggleUserMenu(event)">
+        <span>Hi, ${escapeHtml(firstName || 'there')}</span>
+        <span class="chev">▼</span>
+      </button>
+      <div class="user-menu-dropdown" role="menu">
+        <div class="user-menu-header">
+          <div class="um-name">${escapeHtml(name || firstName)}</div>
+          <div class="um-email">${escapeHtml(email)}</div>
+        </div>
+        <button class="user-menu-item" type="button" onclick="closeUserMenu();switchPage('dashboard')">My Projects</button>
+        <button class="user-menu-item" type="button" onclick="closeUserMenu();switchPage('analyze')">New Analysis</button>
+        <button class="user-menu-item danger" type="button" onclick="closeUserMenu();handleSignOut()">Sign Out</button>
+      </div>
+    `;
+    navRight.appendChild(menu);
+  } else {
+    // Signed out: show the original buttons again
+    if (signInBtn) signInBtn.style.display = '';
+    if (startTrialBtn) startTrialBtn.style.display = '';
   }
 }
+
+// Dropdown helpers
+function toggleUserMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('userMenu');
+  if (menu) menu.classList.toggle('open');
+}
+function closeUserMenu() {
+  const menu = document.getElementById('userMenu');
+  if (menu) menu.classList.remove('open');
+}
+// Close the dropdown when clicking anywhere else on the page
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('userMenu');
+  if (!menu) return;
+  if (!menu.contains(e.target)) menu.classList.remove('open');
+});
+// Close on Escape key for keyboard accessibility
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeUserMenu();
+});
+// Tiny HTML escape helper for user-supplied strings (name, email)
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+window.toggleUserMenu = toggleUserMenu;
+window.closeUserMenu = closeUserMenu;
 
 // Restore session on page load — verifies token with the Worker so an expired
 // or revoked session gets cleared instead of showing stale "logged in" UI.
