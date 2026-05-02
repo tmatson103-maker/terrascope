@@ -2824,6 +2824,14 @@ function populateZoningInline(rawZone) {
 async function renderResults(address) {
  const s = SCENARIOS[selectedType] || SCENARIOS['default'];
 
+ // Prefer the real MapPLUTO zoning code over the scenario's hardcoded template.
+ // SCENARIOS templates are project-type defaults (e.g., "Commercial New Build" → "C1-9").
+ // Real data wins because the C1-9 template would mis-render a C5-3 lot like 550 Madison.
+ const realCode = window._realZoningData?.zoningCode || null;
+ const realLabel = realCode
+   ? `${realCode}${(window._realZoningData?.source ? '' : '')}`  // bare code; populateZoningInline normalizes
+   : s.zoning;
+
  const resultAddressEl = document.getElementById('resultAddress');
  const zoningBadgeEl = document.getElementById('zoningBadge');
  const timelineLabelEl = document.getElementById('timelineLabel');
@@ -2831,11 +2839,11 @@ async function renderResults(address) {
  const aiSummaryEl = document.getElementById('aiSummaryText');
 
  if (resultAddressEl) resultAddressEl.textContent = address;
- if (zoningBadgeEl) zoningBadgeEl.textContent = s.zoning;
+ if (zoningBadgeEl) zoningBadgeEl.textContent = realLabel;
  if (timelineLabelEl) timelineLabelEl.textContent = s.timelineLabel;
  if (timelineValueEl) timelineValueEl.textContent = s.timeline;
  const mapBadge = document.getElementById('mapOverlayBadge');
- if (mapBadge) mapBadge.textContent = (window._realZoningData?.zoningCode) || s.zoning;
+ if (mapBadge) mapBadge.textContent = realCode || s.zoning;
  if (aiSummaryEl) aiSummaryEl.textContent = window._aiSummary || 'Analysis complete. Review permit requirements below.';
 
  // Permits
@@ -2879,7 +2887,8 @@ async function renderResults(address) {
 
  // Show result
  document.getElementById('resultState').style.display = 'block';
- populateZoningInline(s.zoning);
+ // Use the real MapPLUTO code if we have it; otherwise fall back to scenario template.
+ populateZoningInline(realCode || s.zoning);
  const reportTabBtn = document.querySelector('.result-tab[onclick*="\'report\'"]') || document.querySelector('.result-tab');
  switchResultTab('report', reportTabBtn);
  const revealEl = document.getElementById('resultState').querySelector('.reveal');
